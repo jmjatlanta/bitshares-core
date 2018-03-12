@@ -113,6 +113,10 @@ namespace detail {
       bool _force_validate = false;
       application_options _app_options;
 
+      ///////
+      // @brief begin making connections to peers
+      // @param data_dir the directory that contains the configuration information (i.e. data_dir)
+      //////
       void reset_p2p_node(const fc::path& data_dir)
       { try {
          _p2p_network = std::make_shared<net::node>("BitShares Reference Implementation");
@@ -120,6 +124,7 @@ namespace detail {
          _p2p_network->load_configuration(data_dir / "p2p");
          _p2p_network->set_node_delegate(this);
 
+         // The user specified specific seed node(s) that should be connected to
          if( _options->count("seed-node") )
          {
             auto seeds = _options->at("seed-node").as<vector<string>>();
@@ -140,6 +145,7 @@ namespace detail {
             }
          }
 
+         // The user specified a collection of seed nodes
          if( _options->count("seed-nodes") )
          {
             auto seeds_str = _options->at("seed-nodes").as<string>();
@@ -161,6 +167,7 @@ namespace detail {
          }
          else
          {
+            // use the embedded list of seed nodes
             // https://bitsharestalk.org/index.php/topic,23715.0.html
             vector<string> seeds = {
                "104.236.144.84:1777",               // puppies      (USA)
@@ -204,12 +211,25 @@ namespace detail {
          _p2p_network->listen_to_p2p_network();
          ilog("Configured p2p node to listen on ${ip}", ("ip", _p2p_network->get_actual_listening_endpoint()));
 
+         if ( _options->count("disable-peer-advertising") && _options->at("dissable_peer_advertising").as<bool>())
+            _p2p_network->disable_peer_advertising();
+
+         if ( _options->count("accept-incoming-connections") )
+            _p2p_network->accept_incoming_connections( _options->at("accept-incoming-connections").as<bool>());
+
          _p2p_network->connect_to_p2p_network();
+         // start syncing our chain to what is available on the network
          _p2p_network->sync_from(net::item_id(net::core_message_type_enum::block_message_type,
                                               _chain_db->head_block_id()),
                                  std::vector<uint32_t>());
       } FC_CAPTURE_AND_RETHROW() }
 
+      //////
+      // @brief for a string, parse into an fc::ip::endpoint
+      // NOTE: This does a resolve to convert hostnames to IP addresses
+      // @param endpoint_string the string in the format ip.a.d.dr:port or hostname:port
+      // @returns a collection of endpoints
+      //////
       std::vector<fc::ip::endpoint> resolve_string_to_ip_endpoints(const std::string& endpoint_string)
       {
          try
@@ -968,8 +988,9 @@ void application::set_program_options(boost::program_options::options_descriptio
          ("replay-blockchain", "Rebuild object graph by replaying all blocks")
          ("resync-blockchain", "Delete all blocks and re-sync with network from scratch")
          ("force-validate", "Force validation of all transactions")
-         ("genesis-timestamp", bpo::value<uint32_t>(),
-          "Replace timestamp from genesis.json with current time plus this many seconds (experts only!)")
+         ("genesis-timestamp", bpo::value<uint32_t>(), "Replace timestamp from genesis.json with current time plus this many seconds (experts only!)")
+         ("disable-peer-advertising", bpo::value<bool>()->implicit_value(false), "Disable peer advertising")
+         ("accept-incoming-connections", bpo::value<bool>()->implicit_value(true), "Accept incoming connections")
          ;
    command_line_options.add(_cli_options);
    configuration_file_options.add(_cfg_options);
