@@ -5426,6 +5426,9 @@ namespace graphene { namespace net { namespace detail {
     network_nodes.push_back(new node_info(node_delegate_to_add));
   }
 
+  std::shared_ptr<fc::thread> simulated_network::get_thread() { return my->_thread; }
+
+
   namespace detail
   {
 #define ROLLING_WINDOW_SIZE 1000
