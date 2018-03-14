@@ -29,6 +29,8 @@
 
 #include <graphene/chain/protocol/types.hpp>
 
+#include <fc/thread/thread.hpp>
+
 #include <list>
 
 namespace graphene { namespace net {
@@ -292,7 +294,7 @@ namespace graphene { namespace net {
 
         void disable_peer_advertising();
         fc::variant_object get_call_statistics() const;
-      private:
+      protected:
         std::unique_ptr<detail::node_impl, detail::node_impl_deleter> my;
    };
 
@@ -312,6 +314,7 @@ namespace graphene { namespace net {
       void      add_node_delegate(node_delegate* node_delegate_to_add);
 
       virtual uint32_t get_connection_count() const override { return 8; }
+      std::shared_ptr<fc::thread> get_thread();
     private:
       struct node_info;
       void message_sender(node_info* destination_node);
