@@ -76,10 +76,15 @@ public:
 
 BOOST_AUTO_TEST_CASE( p2p_disable_peer_advertising )
 {
+   // first try without the disable-peer-advertising parameter
    test_node my_node("Hello");
    graphene::net::detail::node_impl del;
    std::shared_ptr<test_peer> my_peer(new test_peer{&del});
+   // add a node so it can be returned by the request
+   // make the request for peers
    graphene::net::address_request_message address_request_message_received;
    my_node.on_message(my_peer, address_request_message_received);
    BOOST_CHECK(my_peer->message_received != nullptr);
+   // now try with "disable_peer_advertising" set
+   my_node.disable_peer_advertising();
 }
