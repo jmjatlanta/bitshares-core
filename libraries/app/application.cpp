@@ -111,7 +111,12 @@ namespace detail {
       fc::optional<fc::temp_file> _lock_file;
       bool _is_block_producer = false;
       bool _force_validate = false;
+      application_options _app_options;
 
+      ///////
+      // @brief begin making connections to peers
+      // @param data_dir the directory that contains the configuration information (i.e. data_dir)
+      //////
       void reset_p2p_node(const fc::path& data_dir)
       { try {
          _p2p_network = std::make_shared<net::node>("BitShares Reference Implementation");
@@ -119,6 +124,7 @@ namespace detail {
          _p2p_network->load_configuration(data_dir / "p2p");
          _p2p_network->set_node_delegate(this);
 
+         // The user specified specific seed node(s) that should be connected to
          if( _options->count("seed-node") )
          {
             auto seeds = _options->at("seed-node").as<vector<string>>();
@@ -139,6 +145,7 @@ namespace detail {
             }
          }
 
+         // The user specified a collection of seed nodes
          if( _options->count("seed-nodes") )
          {
             auto seeds_str = _options->at("seed-nodes").as<string>();
@@ -160,6 +167,7 @@ namespace detail {
          }
          else
          {
+            // use the embedded list of seed nodes
             // https://bitsharestalk.org/index.php/topic,23715.0.html
             vector<string> seeds = {
                "104.236.144.84:1777",               // puppies      (USA)
@@ -203,12 +211,25 @@ namespace detail {
          _p2p_network->listen_to_p2p_network();
          ilog("Configured p2p node to listen on ${ip}", ("ip", _p2p_network->get_actual_listening_endpoint()));
 
+         if ( _options->count("disable-peer-advertising") && _options->at("dissable_peer_advertising").as<bool>())
+            _p2p_network->disable_peer_advertising();
+
+         if ( _options->count("accept-incoming-connections") )
+            _p2p_network->accept_incoming_connections( _options->at("accept-incoming-connections").as<bool>());
+
          _p2p_network->connect_to_p2p_network();
+         // start syncing our chain to what is available on the network
          _p2p_network->sync_from(net::item_id(net::core_message_type_enum::block_message_type,
                                               _chain_db->head_block_id()),
                                  std::vector<uint32_t>());
       } FC_CAPTURE_AND_RETHROW() }
 
+      //////
+      // @brief for a string, parse into an fc::ip::endpoint
+      // NOTE: This does a resolve to convert hostnames to IP addresses
+      // @param endpoint_string the string in the format ip.a.d.dr:port or hostname:port
+      // @returns a collection of endpoints
+      //////
       std::vector<fc::ip::endpoint> resolve_string_to_ip_endpoints(const std::string& endpoint_string)
       {
          try
@@ -225,7 +246,9 @@ namespace detail {
                std::string hostname = endpoint_string.substr(0, colon_pos);
                std::vector<fc::ip::endpoint> endpoints = fc::resolve(hostname, port);
                if (endpoints.empty())
-                  FC_THROW_EXCEPTION(fc::unknown_host_exception, "The host name can not be resolved: ${hostname}", ("hostname", hostname));
+                  FC_THROW_EXCEPTION( fc::unknown_host_exception,
+                                      "The host name can not be resolved: ${hostname}",
+                                      ("hostname", hostname) );
                return endpoints;
             }
             catch (const boost::bad_lexical_cast&)
@@ -334,10 +357,14 @@ namespace detail {
                bool modified_genesis = false;
                if( _options->count("genesis-timestamp") )
                {
-                  genesis.initial_timestamp = fc::time_point_sec( fc::time_point::now() ) + genesis.initial_parameters.block_interval + _options->at("genesis-timestamp").as<uint32_t>();
-                  genesis.initial_timestamp -= genesis.initial_timestamp.sec_since_epoch() % genesis.initial_parameters.block_interval;
+                  genesis.initial_timestamp = fc::time_point_sec( fc::time_point::now() )
+                                            + genesis.initial_parameters.block_interval
+                                            + _options->at("genesis-timestamp").as<uint32_t>();
+                  genesis.initial_timestamp -= ( genesis.initial_timestamp.sec_since_epoch()
+                                                 % genesis.initial_parameters.block_interval );
                   modified_genesis = true;
-                  std::cerr << "Used genesis timestamp:  " << genesis.initial_timestamp.to_iso_string() << " (PLEASE RECORD THIS)\n";
+                  std::cerr << "Used genesis timestamp:  " << genesis.initial_timestamp.to_iso_string()
+                            << " (PLEASE RECORD THIS)\n";
                }
                if( _options->count("dbg-init-key") )
                {
@@ -404,6 +431,12 @@ namespace detail {
             _force_validate = true;
          }
 
+         if( _options->count("enable-subscribe-to-all") )
+            _app_options.enable_subscribe_to_all = _options->at("enable-subscribe-to-all").as<bool>();
+
+         if( _active_plugins.find( "market_history" ) != _active_plugins.end() )
+            _app_options.has_market_history_plugin = true;
+
          if( _options->count("api-access") ) {
 
             if(fc::exists(_options->at("api-access").as<boost::filesystem::path>()))
@@ -419,7 +452,6 @@ namespace detail {
                std::exit(EXIT_FAILURE);
             }
          }
-
          else
          {
             // TODO:  Remove this generous default access policy
@@ -432,6 +464,7 @@ namespace detail {
             wild_access.allowed_apis.push_back( "network_broadcast_api" );
             wild_access.allowed_apis.push_back( "history_api" );
             wild_access.allowed_apis.push_back( "crypto_api" );
+            wild_access.allowed_apis.push_back( "orders_api" );
             _apiaccess.permission_map["*"] = wild_access;
          }
 
@@ -505,7 +538,9 @@ namespace detail {
             // you can help the network code out by throwing a block_older_than_undo_history exception.
             // when the net code sees that, it will stop trying to push blocks from that chain, but
             // leave that peer connected so that they can get sync blocks from us
-            bool result = _chain_db->push_block(blk_msg.block, (_is_block_producer | _force_validate) ? database::skip_nothing : database::skip_transaction_signatures);
+            bool result = _chain_db->push_block( blk_msg.block,
+                                                 (_is_block_producer | _force_validate) ?
+                                                    database::skip_nothing : database::skip_transaction_signatures );
 
             // the block was accepted, so we now know all of the transactions contained in the block
             if (!sync_mode)
@@ -526,7 +561,9 @@ namespace detail {
          } catch ( const graphene::chain::unlinkable_block_exception& e ) {
             // translate to a graphene::net exception
             elog("Error when pushing block:\n${e}", ("e", e.to_detail_string()));
-            FC_THROW_EXCEPTION(graphene::net::unlinkable_block_exception, "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
+            FC_THROW_EXCEPTION( graphene::net::unlinkable_block_exception,
+                                "Error when pushing block:\n${e}",
+                                ("e", e.to_detail_string()) );
          } catch( const fc::exception& e ) {
             elog("Error when pushing block:\n${e}", ("e", e.to_detail_string()));
             throw;
@@ -537,7 +574,7 @@ namespace detail {
             _is_finished_syncing = true;
             _self->syncing_finished();
          }
-      } FC_CAPTURE_AND_RETHROW( (blk_msg)(sync_mode) ) }
+      } FC_CAPTURE_AND_RETHROW( (blk_msg)(sync_mode) ) return false; }
 
       virtual void handle_transaction(const graphene::net::trx_message& transaction_message) override
       { try {
@@ -609,7 +646,8 @@ namespace detail {
                break;
              }
            if (!found_a_block_in_synopsis)
-             FC_THROW_EXCEPTION(graphene::net::peer_is_on_an_unreachable_fork, "Unable to provide a list of blocks starting at any of the blocks in peer's synopsis");
+             FC_THROW_EXCEPTION( graphene::net::peer_is_on_an_unreachable_fork,
+                                 "Unable to provide a list of blocks starting at any of the blocks in peer's synopsis" );
          }
          for( uint32_t num = block_header::num_from_id(last_known_block_id);
               num <= _chain_db->head_block_num() && result.size() < limit;
@@ -774,7 +812,8 @@ namespace detail {
               {
                 // unable to get fork history for some reason.  maybe not linked?
                 // we can't return a synopsis of its chain
-                elog("Unable to construct a blockchain synopsis for reference hash ${hash}: ${exception}", ("hash", reference_point)("exception", e));
+                elog( "Unable to construct a blockchain synopsis for reference hash ${hash}: ${exception}",
+                      ("hash", reference_point)("exception", e) );
                 throw;
               }
               if (non_fork_high_block_num < low_block_num)
@@ -921,17 +960,24 @@ void application::set_program_options(boost::program_options::options_descriptio
 {
    configuration_file_options.add_options()
          ("p2p-endpoint", bpo::value<string>(), "Endpoint for P2P node to listen on")
-         ("seed-node,s", bpo::value<vector<string>>()->composing(), "P2P nodes to connect to on startup (may specify multiple times)")
-         ("seed-nodes", bpo::value<string>()->composing(), "JSON array of P2P nodes to connect to on startup")
-         ("checkpoint,c", bpo::value<vector<string>>()->composing(), "Pairs of [BLOCK_NUM,BLOCK_ID] that should be enforced as checkpoints.")
-         ("rpc-endpoint", bpo::value<string>()->implicit_value("127.0.0.1:8090"), "Endpoint for websocket RPC to listen on")
-         ("rpc-tls-endpoint", bpo::value<string>()->implicit_value("127.0.0.1:8089"), "Endpoint for TLS websocket RPC to listen on")
+         ("seed-node,s", bpo::value<vector<string>>()->composing(),
+          "P2P nodes to connect to on startup (may specify multiple times)")
+         ("seed-nodes", bpo::value<string>()->composing(),
+          "JSON array of P2P nodes to connect to on startup")
+         ("checkpoint,c", bpo::value<vector<string>>()->composing(),
+          "Pairs of [BLOCK_NUM,BLOCK_ID] that should be enforced as checkpoints.")
+         ("rpc-endpoint", bpo::value<string>()->implicit_value("127.0.0.1:8090"),
+          "Endpoint for websocket RPC to listen on")
+         ("rpc-tls-endpoint", bpo::value<string>()->implicit_value("127.0.0.1:8089"),
+          "Endpoint for TLS websocket RPC to listen on")
          ("server-pem,p", bpo::value<string>()->implicit_value("server.pem"), "The TLS certificate file for this server")
          ("server-pem-password,P", bpo::value<string>()->implicit_value(""), "Password for this certificate")
          ("genesis-json", bpo::value<boost::filesystem::path>(), "File to read Genesis State from")
          ("dbg-init-key", bpo::value<string>(), "Block signing key to use for init witnesses, overrides genesis file")
          ("api-access", bpo::value<boost::filesystem::path>(), "JSON file specifying API permissions")
          ("plugins", bpo::value<string>(), "Space-separated list of plugins to activate")
+         ("enable-subscribe-to-all", bpo::value<bool>()->implicit_value(false),
+          "Whether allow API clients to subscribe to universal object creation and removal events")
          ;
    command_line_options.add(configuration_file_options);
    command_line_options.add_options()
@@ -943,6 +989,8 @@ void application::set_program_options(boost::program_options::options_descriptio
          ("resync-blockchain", "Delete all blocks and re-sync with network from scratch")
          ("force-validate", "Force validation of all transactions")
          ("genesis-timestamp", bpo::value<uint32_t>(), "Replace timestamp from genesis.json with current time plus this many seconds (experts only!)")
+         ("disable-peer-advertising", bpo::value<bool>()->implicit_value(false), "Disable peer advertising")
+         ("accept-incoming-connections", bpo::value<bool>()->implicit_value(true), "Accept incoming connections")
          ;
    command_line_options.add(_cli_options);
    configuration_file_options.add(_cfg_options);
@@ -988,6 +1036,7 @@ void application::initialize(const fc::path& data_dir, const boost::program_opti
       wanted.push_back("witness");
       wanted.push_back("account_history");
       wanted.push_back("market_history");
+      wanted.push_back("grouped_orders");
    }
    int es_ah_conflict_counter = 0;
    for (auto& it : wanted)
@@ -1094,6 +1143,11 @@ void application::startup_plugins()
    for( auto& entry : my->_active_plugins )
       entry.second->plugin_startup();
    return;
+}
+
+const application_options& application::get_options()
+{
+   return my->_app_options;
 }
 
 // namespace detail
