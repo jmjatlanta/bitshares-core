@@ -40,6 +40,7 @@
 #include <fc/log/file_appender.hpp>
 #include <fc/log/logger.hpp>
 #include <fc/log/logger_config.hpp>
+#include <fc/stacktrace.hpp>
 
 #include <boost/filesystem.hpp>
 
@@ -178,6 +179,7 @@ static void create_new_config_file( const fc::path& config_ini_path, const fc::p
 }
 
 int main(int argc, char** argv) {
+   fc::print_stacktrace_on_segfault();
    app::application* node = new app::application();
    fc::oexception unhandled_exception;
    try {
