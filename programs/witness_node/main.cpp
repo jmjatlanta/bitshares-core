@@ -92,11 +92,18 @@ class deduplicator
       const boost::shared_ptr<bpo::option_description> (*modifier)(const boost::shared_ptr<bpo::option_description>&);
 };
 
+//////////////////
+// @brief load the configuration file
+// @param config_ini_path the full path to the config.ini file
+// @param cfg_options the known configuration options with a default value
+// @param options the options passed on the command line
+//////////////////
 static void load_config_file( const fc::path& config_ini_path, const bpo::options_description& cfg_options,
                               bpo::variables_map& options )
 {
    deduplicator dedup;
    bpo::options_description unique_options("Graphene Witness Node");
+   // loop through known configuration options, making sure they are unique
    for( const boost::shared_ptr<bpo::option_description> opt : cfg_options.options() )
    {
       const boost::shared_ptr<bpo::option_description> od = dedup.next(opt);
@@ -106,7 +113,7 @@ static void load_config_file( const fc::path& config_ini_path, const bpo::option
 
    // get the basic options
    bpo::store(bpo::parse_config_file<char>(config_ini_path.preferred_string().c_str(),
-              unique_options, true), options);
+         unique_options, true), options);
 
    // try to get logging options from the config file.
    try

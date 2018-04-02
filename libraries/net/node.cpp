@@ -2157,6 +2157,11 @@ namespace graphene { namespace net { namespace detail {
         FC_THROW( "unexpected connection_rejected_message from peer" );
     }
 
+    //////////////
+    // @brief a remote peer asks for our list of peers
+    // @param originating_peer who requested
+    // @param address_request_message_received the message
+    //////////////
     void node_impl::on_address_request_message(peer_connection* originating_peer, const address_request_message& address_request_message_received)
     {
       VERIFY_CORRECT_THREAD();
@@ -2186,6 +2191,11 @@ namespace graphene { namespace net { namespace detail {
       originating_peer->send_message(reply);
     }
 
+    //////////////////
+    // @brief a remote peer has given us a list of addresses
+    // @param originating_peer where the message originated
+    // @param address_message_received the message
+    //////////////////
     void node_impl::on_address_message(peer_connection* originating_peer, const address_message& address_message_received)
     {
       VERIFY_CORRECT_THREAD();
@@ -4513,6 +4523,10 @@ namespace graphene { namespace net { namespace detail {
       }
     }
 
+    ///////
+    // @brief listen for incoming p2p connections
+    // NOTE: can be disabled in configuration
+    ///////
     void node_impl::listen_to_p2p_network()
     {
       VERIFY_CORRECT_THREAD();
@@ -4608,6 +4622,9 @@ namespace graphene { namespace net { namespace detail {
       }
     }
 
+    /////////
+    // @brief starts several tasks related to p2p connections and maintenance
+    /////////
     void node_impl::connect_to_p2p_network()
     {
       VERIFY_CORRECT_THREAD();
@@ -4670,6 +4687,10 @@ namespace graphene { namespace net { namespace detail {
       }, "connect_to_task");
     }
 
+    /////////
+    // @brief attempt to connect to a specific endpoint
+    // @param remote_endpoint the endpoint to connect to
+    /////////
     void node_impl::connect_to_endpoint(const fc::ip::endpoint& remote_endpoint)
     {
       VERIFY_CORRECT_THREAD();
@@ -4829,6 +4850,11 @@ namespace graphene { namespace net { namespace detail {
         dlog("Disconnecting from ${peer} for ${reason}", ("peer",peer_to_disconnect->get_remote_endpoint()) ("reason",reason_for_disconnect));
     }
 
+    ////////////
+    // @brief listen on a particular endpoint
+    // @param ep the endpoint
+    // @param wait_if_not_available wait if the endpoint is busy
+    ////////////
     void node_impl::listen_on_endpoint( const fc::ip::endpoint& ep, bool wait_if_not_available )
     {
       VERIFY_CORRECT_THREAD();
@@ -4837,6 +4863,10 @@ namespace graphene { namespace net { namespace detail {
       save_node_configuration();
     }
 
+    ///////////////
+    // @brief configure the node to accept incoming connections
+    // @param accept true to accept, false to ignore
+    ///////////////
     void node_impl::accept_incoming_connections(bool accept)
     {
       VERIFY_CORRECT_THREAD();
@@ -4844,6 +4874,11 @@ namespace graphene { namespace net { namespace detail {
       save_node_configuration();
     }
 
+    ///////////
+    // @brief listens on all interfaces
+    // @param port the port to listen on (0 allows system to select unused port)
+    // @param wait_if_not_available wait if endpoint is busy
+    ///////////
     void node_impl::listen_on_port( uint16_t port, bool wait_if_not_available )
     {
       VERIFY_CORRECT_THREAD();
@@ -5172,11 +5207,18 @@ namespace graphene { namespace net { namespace detail {
     INVOKE_IN_IMPL(load_configuration, configuration_directory);
   }
 
+  ///////
+  // @brief listen for incoming p2p connections
+  // NOTE: can be disabled in configuration
+  ///////
   void node::listen_to_p2p_network()
   {
     INVOKE_IN_IMPL(listen_to_p2p_network);
   }
 
+  /////////
+  // @brief starts several tasks related to p2p connections and maintenance
+  /////////
   void node::connect_to_p2p_network()
   {
     INVOKE_IN_IMPL(connect_to_p2p_network);
@@ -5187,21 +5229,39 @@ namespace graphene { namespace net { namespace detail {
     INVOKE_IN_IMPL(add_node, ep);
   }
 
+  /////////
+  // @brief attempt to connect to a specific endpoint
+  // @param remote_endpoint the endpoint to connect to
+  /////////
   void node::connect_to_endpoint( const fc::ip::endpoint& remote_endpoint )
   {
     INVOKE_IN_IMPL(connect_to_endpoint, remote_endpoint);
   }
 
+  ////////////
+  // @brief listen on a particular endpoint
+  // @param ep the endpoint
+  // @param wait_if_not_available wait if the endpoint is busy
+  ////////////
   void node::listen_on_endpoint(const fc::ip::endpoint& ep , bool wait_if_not_available)
   {
     INVOKE_IN_IMPL(listen_on_endpoint, ep, wait_if_not_available);
   }
 
+  ///////////////
+  // @brief configure the node to accept incoming connections
+  // @param accept true to accept, false to ignore
+  ///////////////
   void node::accept_incoming_connections(bool accept)
   {
     INVOKE_IN_IMPL(accept_incoming_connections, accept);
   }
 
+  ///////////
+  // @brief listens on all interfaces
+  // @param port the port to listen on (0 allows system to select unused port)
+  // @param wait_if_not_available wait if endpoint is busy
+  ///////////
   void node::listen_on_port( uint16_t port, bool wait_if_not_available )
   {
     INVOKE_IN_IMPL(listen_on_port, port, wait_if_not_available);
@@ -5364,6 +5424,9 @@ namespace graphene { namespace net { namespace detail {
   {
     network_nodes.push_back(new node_info(node_delegate_to_add));
   }
+
+  std::shared_ptr<fc::thread> simulated_network::get_thread() { return my->_thread; }
+
 
   namespace detail
   {
