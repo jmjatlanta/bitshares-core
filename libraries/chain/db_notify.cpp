@@ -14,6 +14,7 @@
 #include <graphene/chain/operation_history_object.hpp>
 #include <graphene/chain/vesting_balance_object.hpp>
 #include <graphene/chain/transaction_object.hpp>
+#include <graphene/chain/escrow_object.hpp>
 
 using namespace fc;
 using namespace graphene::chain;
@@ -255,6 +256,30 @@ struct get_impacted_account_visitor
    {
       _impacted.insert( op.fee_payer() ); // account_id
    }
+   void operator()( const escrow_transfer_operation& op )
+   {
+      _impacted.insert( op.from );
+      _impacted.insert( op.to );
+      _impacted.insert( op.agent );
+   }
+   void operator()( const escrow_approve_operation& op )
+   {
+      _impacted.insert( op.from );
+      _impacted.insert( op.to );
+      _impacted.insert( op.agent );
+   }
+   void operator()( const escrow_dispute_operation& op )
+   {
+      _impacted.insert( op.from );
+      _impacted.insert( op.to );
+      _impacted.insert( op.agent );
+   }
+   void operator()( const escrow_release_operation& op )
+   {
+      _impacted.insert( op.from );
+      _impacted.insert( op.to );
+      _impacted.insert( op.agent );
+   }
 };
 
 static void operation_get_impacted_accounts( const operation& op, flat_set<account_id_type>& result )
@@ -405,7 +430,15 @@ static void get_relevant_accounts( const object* obj, flat_set<account_id_type>&
               FC_ASSERT( aobj != nullptr );
               accounts.insert( aobj->bidder );
               break;
-           }
+             }
+             case impl_escrow_object_type:{
+              const auto& aobj = dynamic_cast<const escrow_object*>(obj);
+              assert( aobj != nullptr );
+              accounts.insert( aobj->from );
+              accounts.insert( aobj->to );
+              accounts.insert( aobj->agent );
+              break;
+             }
       }
    }
 } // end get_relevant_accounts( const object* obj, flat_set<account_id_type>& accounts )
