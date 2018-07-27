@@ -280,6 +280,15 @@ struct get_impacted_account_visitor
       _impacted.insert( op.to );
       _impacted.insert( op.agent );
    }
+   void operator() ( const graphene::chain::escrow_htlc_create_operation& op )
+   {
+	   _impacted.insert( op.source );
+	   _impacted.insert( op.destination );
+   }
+   void operator() ( const graphene::chain::escrow_htlc_update_operation& op )
+   {
+	   _impacted.insert( op.update_issuer );
+   }
 };
 
 static void operation_get_impacted_accounts( const operation& op, flat_set<account_id_type>& result )

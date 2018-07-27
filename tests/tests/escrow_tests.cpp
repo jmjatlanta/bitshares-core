@@ -1395,6 +1395,81 @@ BOOST_AUTO_TEST_CASE( escrow_uia )
    } FC_LOG_AND_RETHROW()
 }
 
+std::vector<unsigned char> generate_random_preimage(uint16_t key_size)
+{
+	std::vector<unsigned char> ret_val;
+	// TODO: Impelement this method
+	return ret_val;
+}
 
+std::vector<unsigned char> sha256(std::vector<unsigned char> preimage)
+{
+	std::vector<unsigned char> ret_val;
+	// TODO: Implement this method
+	return ret_val;
+}
+
+BOOST_AUTO_TEST_CASE( escrow_htlc_expires )
+{
+   ACTORS((alice)(bob));
+
+   int64_t init_balance(100000);
+
+   transfer( committee_account, alice_id, graphene::chain::asset(init_balance) );
+
+   uint16_t key_size = 256;
+   std::vector<unsigned char> pre_image = generate_random_preimage(key_size);
+   std::vector<unsigned char> key_hash = sha256(pre_image);
+
+   graphene::chain::processed_transaction alice_trx;
+   // Alice puts a contract on the blockchain
+   {
+      graphene::chain::escrow_htlc_create_operation create_operation;
+
+      create_operation.amount = graphene::chain::asset( 10000 );
+      create_operation.destination = bob_id;
+      create_operation.epoch = (fc::time_point::now() + fc::seconds(3)).sec_since_epoch();
+      create_operation.key_hash = key_hash;
+      create_operation.key_size = key_size;
+      create_operation.source = alice_id;
+      trx.operations.push_back(create_operation);
+      sign(trx, alice_private_key);
+      PUSH_TX(db, trx, ~0);
+      graphene::chain::signed_block blk = generate_block();
+      // can we assume that alice's transaction will be the only one in this block?
+      alice_trx = blk.transactions[0];
+      trx.clear();
+   }
+
+   // verify funds on hold (make sure this can cover fees)
+   //BOOST_TEST_CHECK( check_balance(alice_id, graphene::chain::asset_id_type()) == 99000 );
+   // make sure Alice can't get it back before the timeout
+   {
+      graphene::chain::escrow_htlc_update_operation update_operation;
+      update_operation.update_issuer = alice_id;
+      update_operation.trans_id = alice_trx.id();
+      trx.operations.push_back(update_operation);
+      sign(trx, alice_private_key);
+      // one of these two lines should throw an exception
+      PUSH_TX(db, trx, ~0);
+      generate_block();
+      trx.clear();
+   }
+
+   // make sure Bob (or anyone) can see the details of the transaction
+   // let it expire (wait 3 seconds)
+   // send an update operation to reclaim the funds (NOTE: key size will be checked)
+   // verify funds return (what about fees?)
+   // verify Bob cannot execute the contract after the fact
+}
+
+BOOST_AUTO_TEST_CASE( escrow_htlc_fulfilled )
+{
+   // Alice puts a contract on the blockchain
+   // verify funds on hold
+   // Bob presents the hash
+   // verify funds enter Bob's account
+   // verify Alice cannot get her money back
+}
 
 BOOST_AUTO_TEST_SUITE_END()

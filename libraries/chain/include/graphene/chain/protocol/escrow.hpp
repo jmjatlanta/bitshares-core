@@ -67,6 +67,44 @@ namespace graphene { namespace chain {
          account_id_type fee_payer()const { return from; }
       };
 
+      /*****
+       * This is a scaled-down escrow contract to handle HTLCs
+       */
+      struct escrow_htlc_create_operation : public base_operation {
+          struct fee_parameters_type {
+             uint64_t fee            = 1 * GRAPHENE_BLOCKCHAIN_PRECISION;
+          };
+    	  asset fee; // paid to network
+    	  account_id_type source; // where the held monies are to come from
+    	  account_id_type destination; // where the held monies will go if the preimage is provided
+    	  asset amount; // the amount to hold
+    	  std::vector<unsigned char> key_hash; // the hash of the preimage
+    	  uint16_t key_size; // the size of the preimage
+    	  uint64_t epoch; // The time the funds will be returned to the source if not claimed
+    	  extensions_type extensions; // for future expansion
+
+    	  void validate()const;
+          void get_required_active_authorities( flat_set<account_id_type>& a )const{ a.insert(source); }
+          account_id_type fee_payer()const { return source; }
+
+      };
+
+      struct escrow_htlc_update_operation : public base_operation
+      {
+          struct fee_parameters_type {
+             uint64_t fee            = 1 * GRAPHENE_BLOCKCHAIN_PRECISION;
+          };
+    	  asset fee; // paid to network
+    	  transaction_id_type trans_id; // the transaction we are attempting to update
+    	  account_id_type update_issuer; // who is attempting to update the transaction
+    	  uint64_t preimage; // the preimage (not used if after epoch timeout)
+    	  extensions_type extensions; // for future expansion
+
+    	  void validate()const;
+          void get_required_active_authorities( flat_set<account_id_type>& a )const{ a.insert(update_issuer); }
+          account_id_type fee_payer()const { return update_issuer; }
+      };
+
       /**
        *  The agent and to accounts must approve an escrow transaction for it to be valid on
        *  the blockchain. Once a part approves the escrow, the cannot revoke their approval.
@@ -150,8 +188,13 @@ FC_REFLECT( graphene::chain::escrow_transfer_operation::fee_parameters_type, (fe
 FC_REFLECT( graphene::chain::escrow_approve_operation::fee_parameters_type, (fee) )
 FC_REFLECT( graphene::chain::escrow_dispute_operation::fee_parameters_type, (fee) )
 FC_REFLECT( graphene::chain::escrow_release_operation::fee_parameters_type, (fee) )
+FC_REFLECT( graphene::chain::escrow_htlc_create_operation::fee_parameters_type, (fee) )
+FC_REFLECT( graphene::chain::escrow_htlc_update_operation::fee_parameters_type, (fee) )
 
-FC_REFLECT( graphene::chain::escrow_transfer_operation, (fee)(from)(to)(agent)(amount)(escrow_id)(agent_fee)(json_meta)(ratification_deadline)(escrow_expiration) );
-FC_REFLECT( graphene::chain::escrow_approve_operation, (fee)(from)(to)(agent)(who)(escrow_id)(approve) );
-FC_REFLECT( graphene::chain::escrow_dispute_operation, (fee)(from)(to)(agent)(who)(escrow_id) );
-FC_REFLECT( graphene::chain::escrow_release_operation, (fee)(from)(to)(agent)(who)(receiver)(escrow_id)(amount) );
+
+FC_REFLECT( graphene::chain::escrow_transfer_operation, (fee)(from)(to)(agent)(amount)(escrow_id)(agent_fee)(json_meta)(ratification_deadline)(escrow_expiration) )
+FC_REFLECT( graphene::chain::escrow_approve_operation, (fee)(from)(to)(agent)(who)(escrow_id)(approve) )
+FC_REFLECT( graphene::chain::escrow_dispute_operation, (fee)(from)(to)(agent)(who)(escrow_id) )
+FC_REFLECT( graphene::chain::escrow_release_operation, (fee)(from)(to)(agent)(who)(receiver)(escrow_id)(amount) )
+FC_REFLECT( graphene::chain::escrow_htlc_create_operation, (fee)(source)(destination)(amount)(key_hash)(key_size)(epoch)(extensions))
+FC_REFLECT( graphene::chain::escrow_htlc_update_operation, (fee)(trans_id)(update_issuer)(preimage)(extensions))

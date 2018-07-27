@@ -61,4 +61,20 @@ namespace graphene { namespace chain {
          void_result do_evaluate( const escrow_release_operation& o );
          void_result do_apply( const escrow_release_operation& o );
       };
+
+      class escrow_htlc_create_evaluator : public evaluator<escrow_htlc_create_evaluator>
+      {
+    	  typedef escrow_htlc_create_operation operation_type;
+
+    	  void_result do_evaluate( const escrow_htlc_create_operation& o);
+    	  void_result do_apply( const escrow_htlc_create_operation& o);
+      };
+
+      class escrow_htlc_update_evaluator : public evaluator<escrow_htlc_update_evaluator>
+      {
+    	  typedef escrow_htlc_update_operation operation_type;
+
+    	  void_result do_evaluate( const escrow_htlc_update_operation& o);
+    	  void_result do_apply( const escrow_htlc_update_operation& o);
+      };
 } } // graphene::chain

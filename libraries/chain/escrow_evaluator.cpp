@@ -238,4 +238,28 @@ namespace graphene { namespace chain {
          } FC_CAPTURE_AND_RETHROW( (o) )
       }
 
+      void_result escrow_htlc_create_evaluator::do_evaluate(const escrow_htlc_create_operation& o)
+      {
+    	  //TODO: Implement this method
+    	  return void_result();
+      }
+
+      void_result escrow_htlc_create_evaluator::do_apply(const escrow_htlc_create_operation& o)
+      {
+    	  //TODO: Implement this method
+    	  return void_result();
+      }
+
+      void_result escrow_htlc_update_evaluator::do_evaluate(const escrow_htlc_update_operation& o)
+      {
+    	  //TODO: Implement this method
+    	  return void_result();
+      }
+
+      void_result escrow_htlc_update_evaluator::do_apply(const escrow_htlc_update_operation& o)
+      {
+    	  //TODO: Implement this method
+    	  return void_result();
+      }
+
 } } // graphene::chain

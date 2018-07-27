@@ -150,18 +150,18 @@ extern uint32_t GRAPHENE_TESTING_GENESIS_TIMESTAMP;
 
 #define PREP_ACTOR(name) \
    fc::ecc::private_key name ## _private_key = generate_private_key(BOOST_PP_STRINGIZE(name));   \
-   public_key_type name ## _public_key = name ## _private_key.get_public_key(); \
-   BOOST_CHECK( name ## _public_key != public_key_type() );
+   graphene::chain::public_key_type name ## _public_key = name ## _private_key.get_public_key(); \
+   BOOST_CHECK( name ## _public_key != graphene::chain::public_key_type() );
 
 #define ACTOR(name) \
    PREP_ACTOR(name) \
    const auto& name = create_account(BOOST_PP_STRINGIZE(name), name ## _public_key); \
-   account_id_type name ## _id = name.id; (void)name ## _id;
+   graphene::chain::account_id_type name ## _id = name.id; (void)name ## _id;
 
 #define GET_ACTOR(name) \
    fc::ecc::private_key name ## _private_key = generate_private_key(BOOST_PP_STRINGIZE(name)); \
-   const account_object& name = get_account(BOOST_PP_STRINGIZE(name)); \
-   account_id_type name ## _id = name.id; \
+   const graphene::chain::account_object& name = get_account(BOOST_PP_STRINGIZE(name)); \
+   graphene::chain::account_id_type name ## _id = name.id; \
    (void)name ##_id
 
 #define ACTORS_IMPL(r, data, elem) ACTOR(elem)
@@ -176,11 +176,11 @@ struct database_fixture {
    genesis_state_type genesis_state;
    chain::database &db;
    signed_transaction trx;
-   public_key_type committee_key;
+   graphene::chain::public_key_type committee_key;
    account_id_type committee_account;
    fc::ecc::private_key private_key = fc::ecc::private_key::generate();
    fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate(fc::sha256::hash(string("null_key")) );
-   public_key_type init_account_pub_key;
+   graphene::chain::public_key_type init_account_pub_key;
 
    optional<fc::temp_directory> data_dir;
    bool skip_key_index_test = false;
@@ -213,7 +213,7 @@ struct database_fixture {
 
    account_create_operation make_account(
       const std::string& name = "nathan",
-      public_key_type = public_key_type()
+      public_key_type = graphene::chain::public_key_type()
       );
 
    account_create_operation make_account(
@@ -221,7 +221,7 @@ struct database_fixture {
       const account_object& registrar,
       const account_object& referrer,
       uint8_t referrer_percent = 100,
-      public_key_type key = public_key_type()
+      public_key_type key = graphene::chain::public_key_type()
       );
 
    void force_global_settle(const asset_object& what, const price& p);
@@ -290,7 +290,7 @@ struct database_fixture {
 
    const account_object& create_account(
       const string& name,
-      const public_key_type& key = public_key_type()
+      const graphene::chain::public_key_type& key = public_key_type()
       );
 
    const account_object& create_account(
@@ -298,14 +298,14 @@ struct database_fixture {
       const account_object& registrar,
       const account_object& referrer,
       uint8_t referrer_percent = 100,
-      const public_key_type& key = public_key_type()
+      const graphene::chain::public_key_type& key = public_key_type()
       );
 
    const account_object& create_account(
       const string& name,
-      const private_key_type& key,
-      const account_id_type& registrar_id = account_id_type(),
-      const account_id_type& referrer_id = account_id_type(),
+      const graphene::chain::private_key_type& key,
+      const graphene::chain::account_id_type& registrar_id = graphene::chain::account_id_type(),
+      const graphene::chain::account_id_type& referrer_id = graphene::chain::account_id_type(),
       uint8_t referrer_percent = 100
       );
 
