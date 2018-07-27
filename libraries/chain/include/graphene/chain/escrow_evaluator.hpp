@@ -64,6 +64,7 @@ namespace graphene { namespace chain {
 
       class escrow_htlc_create_evaluator : public evaluator<escrow_htlc_create_evaluator>
       {
+      public:
     	  typedef escrow_htlc_create_operation operation_type;
 
     	  void_result do_evaluate( const escrow_htlc_create_operation& o);
@@ -72,6 +73,7 @@ namespace graphene { namespace chain {
 
       class escrow_htlc_update_evaluator : public evaluator<escrow_htlc_update_evaluator>
       {
+      public:
     	  typedef escrow_htlc_update_operation operation_type;
 
     	  void_result do_evaluate( const escrow_htlc_update_operation& o);

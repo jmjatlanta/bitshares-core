@@ -24,6 +24,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <graphene/chain/protocol/escrow.hpp>
+
 #include <graphene/chain/database.hpp>
 #include <graphene/chain/hardfork.hpp>
 

@@ -183,6 +183,8 @@ void database::initialize_evaluators()
    register_evaluator<escrow_approve_evaluator>();
    register_evaluator<escrow_dispute_evaluator>();
    register_evaluator<escrow_release_evaluator>();
+   register_evaluator<escrow_htlc_create_evaluator>();
+   register_evaluator<escrow_htlc_update_evaluator>();
 }
 
 void database::initialize_indexes()

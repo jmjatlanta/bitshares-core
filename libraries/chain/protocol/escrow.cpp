@@ -49,4 +49,10 @@ namespace graphene { namespace chain {
          //FC_ASSERT( amount.asset_id == asset_id_type()); // only bts is allowed (temp)
          FC_ASSERT( fee.asset_id == asset_id_type() ); // fee only in bts (temp)
       }
+      void escrow_htlc_create_operation::validate()const {
+    	  //TODO: Implement
+      }
+      void escrow_htlc_update_operation::validate()const {
+    	  //TODO: Implement
+      }
 } }

@@ -101,7 +101,9 @@ namespace graphene { namespace chain {
             escrow_transfer_operation,
             escrow_approve_operation,
             escrow_dispute_operation,
-            escrow_release_operation
+            escrow_release_operation,
+			escrow_htlc_create_operation,
+			escrow_htlc_update_operation
 
          > operation;
 
