@@ -51,8 +51,10 @@ namespace graphene { namespace chain {
       }
       void escrow_htlc_create_operation::validate()const {
     	  //TODO: Implement
+    	  // signer must equal from
       }
       void escrow_htlc_update_operation::validate()const {
     	  //TODO: Implement
+    	  // if preimage is provided, size must equal the size stored in the contract
       }
 } }

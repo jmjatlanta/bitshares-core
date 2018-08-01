@@ -95,9 +95,9 @@ namespace graphene { namespace chain {
              uint64_t fee            = 1 * GRAPHENE_BLOCKCHAIN_PRECISION;
           };
     	  asset fee; // paid to network
-    	  transaction_id_type trans_id; // the transaction we are attempting to update
+    	  escrow_id_type trans_id; // the transaction we are attempting to update
     	  account_id_type update_issuer; // who is attempting to update the transaction
-    	  uint64_t preimage; // the preimage (not used if after epoch timeout)
+    	  std::vector<unsigned char> preimage; // the preimage (not used if after epoch timeout)
     	  extensions_type extensions; // for future expansion
 
     	  void validate()const;

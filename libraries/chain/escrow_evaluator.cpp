@@ -240,25 +240,79 @@ namespace graphene { namespace chain {
 
       void_result escrow_htlc_create_evaluator::do_evaluate(const escrow_htlc_create_operation& o)
       {
-    	  //TODO: Implement this method
-    	  return void_result();
+          FC_ASSERT( db().head_block_time() > HARDFORK_ESCROW_TIME,
+                     "Operation not allowed before HARDFORK_ESCROW_TIME."); // remove after HARDFORK_ESCROW_TIME
+
+          FC_ASSERT( fc::time_point_sec(o.epoch) > db().head_block_time() );
+          // TODO: what is the fee denominated in?
+          FC_ASSERT( db().get_balance( o.source, o.amount.asset_id ) >= (o.amount + o.fee) );
+          return void_result();
       }
 
-      void_result escrow_htlc_create_evaluator::do_apply(const escrow_htlc_create_operation& o)
+      object_id_type escrow_htlc_create_evaluator::do_apply(const escrow_htlc_create_operation& o)
       {
-    	  //TODO: Implement this method
-    	  return void_result();
+          try {
+             FC_ASSERT( db().head_block_time() > HARDFORK_ESCROW_TIME,
+                        "Operation not allowed before HARDFORK_ESCROW_TIME."); // remove after HARDFORK_ESCROW_TIME
+
+             db().adjust_balance( o.source, -o.amount );
+
+             const escrow_object& esc = db().create<escrow_object>([&]( escrow_object& esc ) {
+                esc.from                   = o.source;
+                esc.to                     = o.destination;
+                esc.amount                 = o.amount;
+                esc.preimage_hash		   = o.key_hash;
+                esc.preimage_size		   = o.key_size;
+             });
+             return  esc.id;
+
+          } FC_CAPTURE_AND_RETHROW( (o) )
       }
 
       void_result escrow_htlc_update_evaluator::do_evaluate(const escrow_htlc_update_operation& o)
       {
-    	  //TODO: Implement this method
+    	  escrow_obj = &db().get<escrow_object>(o.trans_id);
+
+    	  // TODO: Use signatures to determine what to do, not whether preimage was provided
+    	  if (o.preimage.size() == 0)
+    	  {
+    		  FC_ASSERT(o.preimage.size() == escrow_obj->preimage_size, "Preimage size mismatch.");
+    		  FC_ASSERT(db().head_block_time() < escrow_obj->escrow_expiration, "Preimage provided after escrow expiration.");
+
+    		  // hash the preimage given by the user
+    		  fc::sha256 attempted_hash = fc::sha256::hash(o.preimage);
+    		  // put the preimage hash in a format we can compare
+    		  std::vector<unsigned char> passed_hash(attempted_hash.data_size());
+    		  char* data = attempted_hash.data();
+    		  for(size_t i = 0; i < attempted_hash.data_size(); ++i)
+    		  {
+    			  passed_hash[i] = data[i];
+    		  }
+
+    		  FC_ASSERT(passed_hash == escrow_obj->preimage_hash, "Provided preimage does not generate correct hash.");
+    	  }
+    	  else
+    	  {
+    		  FC_ASSERT(db().head_block_time() > escrow_obj->escrow_expiration, "Unable to reclaim until escrow expiration.");
+    		  FC_ASSERT(escrow_obj->preimage.size() == 0, "Preimage already provided.");
+    	  }
     	  return void_result();
       }
 
       void_result escrow_htlc_update_evaluator::do_apply(const escrow_htlc_update_operation& o)
       {
-    	  //TODO: Implement this method
+    	  if (o.preimage.size() == 0)
+    	  {
+    		  db().adjust_balance(escrow_obj->to, escrow_obj->amount);
+    		  db().modify(*escrow_obj, [&o](escrow_object& obj){
+    			  obj.preimage = o.preimage;
+    		  });
+    	  }
+    	  else
+    	  {
+    		  db().adjust_balance(escrow_obj->from, escrow_obj->amount);
+    		  db().remove(*escrow_obj);
+    	  }
     	  return void_result();
       }
 

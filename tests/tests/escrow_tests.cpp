@@ -22,6 +22,13 @@
  * THE SOFTWARE.
  */
 
+// below are for random bytes for htlc
+#include <vector>
+#include <random>
+#include <climits>
+#include <algorithm>
+#include <functional>
+
 #include <boost/test/unit_test.hpp>
 
 #include <graphene/chain/protocol/escrow.hpp>
@@ -1397,17 +1404,22 @@ BOOST_AUTO_TEST_CASE( escrow_uia )
    } FC_LOG_AND_RETHROW()
 }
 
-std::vector<unsigned char> generate_random_preimage(uint16_t key_size)
+void generate_random_preimage(uint16_t key_size, std::vector<unsigned char>& vec)
 {
-	std::vector<unsigned char> ret_val;
-	// TODO: Impelement this method
-	return ret_val;
+	std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char> rbe;
+	std::generate(begin(vec), end(vec), std::ref(rbe));
+	return;
 }
 
-std::vector<unsigned char> sha256(std::vector<unsigned char> preimage)
+std::vector<unsigned char> hash_it(std::vector<unsigned char> preimage)
 {
-	std::vector<unsigned char> ret_val;
-	// TODO: Implement this method
+	fc::sha256 hash = fc::sha256::hash(preimage).data();
+	std::vector<unsigned char> ret_val(hash.data_size());
+	char* data = hash.data();
+	for(size_t i = 0; i < hash.data_size(); i++)
+	{
+		ret_val[i] = data[i];
+	}
 	return ret_val;
 }
 
@@ -1420,8 +1432,9 @@ BOOST_AUTO_TEST_CASE( escrow_htlc_expires )
    transfer( committee_account, alice_id, graphene::chain::asset(init_balance) );
 
    uint16_t key_size = 256;
-   std::vector<unsigned char> pre_image = generate_random_preimage(key_size);
-   std::vector<unsigned char> key_hash = sha256(pre_image);
+   std::vector<unsigned char> pre_image(256);
+   generate_random_preimage(key_size, pre_image);
+   std::vector<unsigned char> key_hash = hash_it(pre_image);
 
    graphene::chain::processed_transaction alice_trx;
    // Alice puts a contract on the blockchain
@@ -1444,7 +1457,9 @@ BOOST_AUTO_TEST_CASE( escrow_htlc_expires )
    }
 
    // verify funds on hold (make sure this can cover fees)
-   //BOOST_TEST_CHECK( check_balance(alice_id, graphene::chain::asset_id_type()) == 99000 );
+   BOOST_TEST_CHECK( get_balance(alice_id, graphene::chain::asset_id_type()) < 99000 );
+   BOOST_TEST_CHECK( get_balance(alice_id, graphene::chain::asset_id_type()) > 98000 );
+
    // make sure Alice can't get it back before the timeout
    {
       graphene::chain::escrow_htlc_update_operation update_operation;

@@ -45,6 +45,9 @@ namespace graphene { namespace chain {
             time_point_sec          ratification_deadline;
             time_point_sec          escrow_expiration;
             asset                   pending_fee;
+            vector<unsigned char>	preimage_hash; // For HTLC
+            uint16_t				preimage_size; // For HTLC
+            vector<unsigned char>	preimage; // for HTLC
             bool                    to_approved = false;
             bool                    agent_approved = false;
             bool                    disputed = false;
