@@ -23,7 +23,10 @@
  */
 #pragma once
 
+#include <boost/multi_index/composite_key.hpp>
+#include <fc/time.hpp>
 #include <graphene/chain/protocol/types.hpp>
+#include <graphene/chain/protocol/asset.hpp>
 #include <graphene/db/object.hpp>
 #include <graphene/db/generic_index.hpp>
 
@@ -42,8 +45,8 @@ namespace graphene { namespace chain {
             account_id_type         to;
             account_id_type         agent;
             asset                   amount;
-            time_point_sec          ratification_deadline;
-            time_point_sec          escrow_expiration;
+            fc::time_point_sec          ratification_deadline;
+            fc::time_point_sec          escrow_expiration;
             asset                   pending_fee;
             vector<unsigned char>	preimage_hash; // For HTLC
             uint16_t				preimage_size; // For HTLC
@@ -63,7 +66,7 @@ namespace graphene { namespace chain {
          indexed_by<
             ordered_unique< tag< by_id >, member< object, object_id_type, &object::id > >,
 
-            ordered_non_unique< tag< by_expiration >, member< escrow_object, time_point_sec, &escrow_object::escrow_expiration > >,
+            ordered_non_unique< tag< by_expiration >, member< escrow_object, fc::time_point_sec, &escrow_object::escrow_expiration > >,
 
             ordered_unique< tag< by_from_id >,
                composite_key< escrow_object,
@@ -74,10 +77,10 @@ namespace graphene { namespace chain {
             ordered_unique< tag< by_ratification_deadline >,
                composite_key< escrow_object,
                   const_mem_fun< escrow_object, bool, &escrow_object::is_approved >,
-                  member< escrow_object, time_point_sec, &escrow_object::ratification_deadline >,
+                  member< escrow_object, fc::time_point_sec, &escrow_object::ratification_deadline >,
                   member< escrow_object, uint32_t, &escrow_object::escrow_id >
                >,
-               composite_key_compare< std::less< bool >, std::less< time_point_sec >, std::less< uint32_t > >
+               composite_key_compare< std::less< bool >, std::less< fc::time_point_sec >, std::less< uint32_t > >
             >
          >
 
@@ -88,4 +91,6 @@ namespace graphene { namespace chain {
    } }
 
 FC_REFLECT_DERIVED( graphene::chain::escrow_object, (graphene::db::object),
-                    (escrow_id)(from)(to)(agent)(ratification_deadline)(escrow_expiration)(pending_fee)(amount)(disputed)(to_approved)(agent_approved) );
+                    (escrow_id)(from)(to)(agent)(amount)(ratification_deadline)(escrow_expiration)(pending_fee)
+					(preimage_hash)(preimage_size)(preimage)
+					(to_approved)(agent_approved)(disputed) );

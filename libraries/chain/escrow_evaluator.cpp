@@ -240,16 +240,18 @@ namespace graphene { namespace chain {
 
       void_result escrow_htlc_create_evaluator::do_evaluate(const escrow_htlc_create_operation& o)
       {
+    	  /*
           FC_ASSERT( db().head_block_time() > HARDFORK_ESCROW_TIME,
                      "Operation not allowed before HARDFORK_ESCROW_TIME."); // remove after HARDFORK_ESCROW_TIME
 
           FC_ASSERT( fc::time_point_sec(o.epoch) > db().head_block_time() );
           // TODO: what is the fee denominated in?
           FC_ASSERT( db().get_balance( o.source, o.amount.asset_id ) >= (o.amount + o.fee) );
+          */
           return void_result();
       }
 
-      object_id_type escrow_htlc_create_evaluator::do_apply(const escrow_htlc_create_operation& o)
+      void_result escrow_htlc_create_evaluator::do_apply(const escrow_htlc_create_operation& o)
       {
           try {
              FC_ASSERT( db().head_block_time() > HARDFORK_ESCROW_TIME,
@@ -264,9 +266,10 @@ namespace graphene { namespace chain {
                 esc.preimage_hash		   = o.key_hash;
                 esc.preimage_size		   = o.key_size;
              });
-             return  esc.id;
+             //return  esc.id;
 
           } FC_CAPTURE_AND_RETHROW( (o) )
+    	  return void_result();
       }
 
       void_result escrow_htlc_update_evaluator::do_evaluate(const escrow_htlc_update_operation& o)

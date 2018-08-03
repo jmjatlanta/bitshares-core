@@ -22,7 +22,11 @@
  * THE SOFTWARE.
  */
 #pragma once
+#include <fc/time.hpp>
+#include <boost/container/flat_set.hpp>
+#include <graphene/chain/escrow_object.hpp>
 #include <graphene/chain/protocol/base.hpp>
+#include <graphene/chain/protocol/types.hpp>
 
 namespace graphene { namespace chain {
 
@@ -58,12 +62,12 @@ namespace graphene { namespace chain {
          uint32_t                escrow_id=0;
          account_id_type         agent;
          asset                   agent_fee;
-         string                  json_meta;
-         time_point_sec          ratification_deadline;
-         time_point_sec          escrow_expiration;
+         std::string                  json_meta;
+         fc::time_point_sec          ratification_deadline;
+         fc::time_point_sec          escrow_expiration;
 
          void validate()const;
-         void get_required_active_authorities( flat_set<account_id_type>& a )const{ a.insert(from); }
+         void get_required_active_authorities( boost::container::flat_set<account_id_type>& a )const{ a.insert(from); }
          account_id_type fee_payer()const { return from; }
       };
 
@@ -84,7 +88,7 @@ namespace graphene { namespace chain {
     	  extensions_type extensions; // for future expansion
 
     	  void validate()const;
-          void get_required_active_authorities( flat_set<account_id_type>& a )const{ a.insert(source); }
+          void get_required_active_authorities( boost::container::flat_set<account_id_type>& a )const{ a.insert(source); }
           account_id_type fee_payer()const { return source; }
 
       };
@@ -101,7 +105,7 @@ namespace graphene { namespace chain {
     	  extensions_type extensions; // for future expansion
 
     	  void validate()const;
-          void get_required_active_authorities( flat_set<account_id_type>& a )const{ a.insert(update_issuer); }
+          void get_required_active_authorities( boost::container::flat_set<account_id_type>& a )const{ a.insert(update_issuer); }
           account_id_type fee_payer()const { return update_issuer; }
       };
 
@@ -125,7 +129,7 @@ namespace graphene { namespace chain {
          bool                    approve;
 
          void validate()const;
-         void get_required_active_authorities( flat_set<account_id_type>& a )const{ a.insert(who); }
+         void get_required_active_authorities( boost::container::flat_set<account_id_type>& a )const{ a.insert(who); }
          account_id_type fee_payer()const { return who; }
       };
 
@@ -148,7 +152,7 @@ namespace graphene { namespace chain {
          account_id_type         who;
 
          void validate()const;
-         void get_required_active_authorities( flat_set<account_id_type>& a )const{ a.insert(who); }
+         void get_required_active_authorities( boost::container::flat_set<account_id_type>& a )const{ a.insert(who); }
          account_id_type fee_payer()const { return who; }
       };
 
@@ -178,7 +182,7 @@ namespace graphene { namespace chain {
          asset                   amount; ///< the amount of funds to release
 
          void validate()const;
-         void get_required_active_authorities( flat_set<account_id_type>& a )const{ a.insert(who); }
+         void get_required_active_authorities( boost::container::flat_set<account_id_type>& a )const{ a.insert(who); }
          account_id_type fee_payer()const { return who; }
       };
 

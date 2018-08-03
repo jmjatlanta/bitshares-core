@@ -24,10 +24,12 @@
 
 // below are for random bytes for htlc
 #include <vector>
+/*
 #include <random>
 #include <climits>
 #include <algorithm>
 #include <functional>
+*/
 
 #include <boost/test/unit_test.hpp>
 
@@ -1406,14 +1408,14 @@ BOOST_AUTO_TEST_CASE( escrow_uia )
 
 void generate_random_preimage(uint16_t key_size, std::vector<unsigned char>& vec)
 {
-	std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char> rbe;
-	std::generate(begin(vec), end(vec), std::ref(rbe));
+	//std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char> rbe;
+	//std::generate(begin(vec), end(vec), std::ref(rbe));
 	return;
 }
 
 std::vector<unsigned char> hash_it(std::vector<unsigned char> preimage)
 {
-	fc::sha256 hash = fc::sha256::hash(preimage).data();
+	fc::sha256 hash = fc::sha256::hash(preimage);
 	std::vector<unsigned char> ret_val(hash.data_size());
 	char* data = hash.data();
 	for(size_t i = 0; i < hash.data_size(); i++)
@@ -1464,7 +1466,7 @@ BOOST_AUTO_TEST_CASE( escrow_htlc_expires )
    {
       graphene::chain::escrow_htlc_update_operation update_operation;
       update_operation.update_issuer = alice_id;
-      update_operation.trans_id = alice_trx.id();
+      //update_operation.trans_id = alice_trx.id();
       trx.operations.push_back(update_operation);
       sign(trx, alice_private_key);
       // one of these two lines should throw an exception
