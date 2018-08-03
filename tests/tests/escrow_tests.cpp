@@ -24,14 +24,19 @@
 
 // below are for random bytes for htlc
 #include <vector>
-/*
 #include <random>
 #include <climits>
 #include <algorithm>
 #include <functional>
-*/
+// for htlc timeout
+#include <chrono>
+#include <thread>
 
 #include <boost/test/unit_test.hpp>
+
+#include <boost/container/flat_set.hpp>
+
+#include <fc/optional.hpp>
 
 #include <graphene/chain/protocol/escrow.hpp>
 
@@ -1122,8 +1127,8 @@ BOOST_AUTO_TEST_CASE( escrow_authorities )
       op.ratification_deadline = db.head_block_time() + 100;
       op.escrow_expiration = db.head_block_time() + 200;
 
-      flat_set< account_id_type > auths;
-      flat_set< account_id_type > expected;
+      boost::container::flat_set< account_id_type > auths;
+      boost::container::flat_set< account_id_type > expected;
 
       op.get_required_active_authorities( auths );
       expected.insert( alice_id );
@@ -1272,7 +1277,7 @@ BOOST_AUTO_TEST_CASE( escrow_api )
       BOOST_REQUIRE_EQUAL(get_balance(bob_id, asset_id_type()), 0);
       BOOST_REQUIRE_EQUAL(get_balance(sam_id, asset_id_type()), 0);
 
-      optional<escrow_object> e = escrow_api.get_escrow(alice_id, 0);
+      fc::optional<escrow_object> e = escrow_api.get_escrow(alice_id, 0);
 
       if(e.valid())
       {
@@ -1408,8 +1413,8 @@ BOOST_AUTO_TEST_CASE( escrow_uia )
 
 void generate_random_preimage(uint16_t key_size, std::vector<unsigned char>& vec)
 {
-	//std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char> rbe;
-	//std::generate(begin(vec), end(vec), std::ref(rbe));
+	std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char> rbe;
+	std::generate(begin(vec), end(vec), std::ref(rbe));
 	return;
 }
 
@@ -1438,57 +1443,192 @@ BOOST_AUTO_TEST_CASE( escrow_htlc_expires )
    generate_random_preimage(key_size, pre_image);
    std::vector<unsigned char> key_hash = hash_it(pre_image);
 
-   graphene::chain::processed_transaction alice_trx;
+   graphene::chain::escrow_id_type alice_escrow_id;
+   // cler everything out
+   generate_block();
+   trx.clear();
    // Alice puts a contract on the blockchain
    {
       graphene::chain::escrow_htlc_create_operation create_operation;
 
       create_operation.amount = graphene::chain::asset( 10000 );
       create_operation.destination = bob_id;
-      create_operation.epoch = (fc::time_point::now() + fc::seconds(3)).sec_since_epoch();
+      create_operation.epoch = fc::time_point::now() + fc::seconds(3);
       create_operation.key_hash = key_hash;
       create_operation.key_size = key_size;
       create_operation.source = alice_id;
       trx.operations.push_back(create_operation);
       sign(trx, alice_private_key);
-      PUSH_TX(db, trx, ~0);
+      try
+      {
+    	  PUSH_TX(db, trx, ~0);
+      } catch (fc::exception& ex)
+      {
+    	  BOOST_FAIL( ex.to_detail_string(fc::log_level(fc::log_level::all)) );
+      }
+      trx.clear();
       graphene::chain::signed_block blk = generate_block();
       // can we assume that alice's transaction will be the only one in this block?
-      alice_trx = blk.transactions[0];
-      trx.clear();
+      processed_transaction alice_trx = blk.transactions[0];
+      alice_escrow_id = alice_trx.operation_results[0].get<object_id_type>();
    }
 
    // verify funds on hold (make sure this can cover fees)
-   BOOST_TEST_CHECK( get_balance(alice_id, graphene::chain::asset_id_type()) < 99000 );
-   BOOST_TEST_CHECK( get_balance(alice_id, graphene::chain::asset_id_type()) > 98000 );
+   BOOST_TEST_CHECK( get_balance(alice_id, graphene::chain::asset_id_type()) == 90000 );
+   //BOOST_TEST_CHECK( get_balance(alice_id, graphene::chain::asset_id_type()) > 98000 );
 
    // make sure Alice can't get it back before the timeout
    {
       graphene::chain::escrow_htlc_update_operation update_operation;
       update_operation.update_issuer = alice_id;
-      //update_operation.trans_id = alice_trx.id();
+      update_operation.escrow_id = alice_escrow_id;
       trx.operations.push_back(update_operation);
       sign(trx, alice_private_key);
-      // one of these two lines should throw an exception
-      PUSH_TX(db, trx, ~0);
+      try
+      {
+          PUSH_TX(db, trx, ~0);
+          BOOST_FAIL("Should not allow Alice to reclaim funds before timeout");
+      } catch (fc::exception& ex)
+      {
+    	  // this should happen
+      }
       generate_block();
       trx.clear();
    }
 
+   // make sure Alice can't spend it.
    // make sure Bob (or anyone) can see the details of the transaction
-   // let it expire (wait 3 seconds)
-   // send an update operation to reclaim the funds (NOTE: key size will be checked)
+   // let it expire (wait for timeout)
+   std::this_thread::sleep_for(std::chrono::seconds(4));
+   // send an update operation to reclaim the funds
+   {
+      graphene::chain::escrow_htlc_update_operation update_operation;
+      update_operation.update_issuer = alice_id;
+      update_operation.escrow_id = alice_escrow_id;
+      trx.operations.push_back(update_operation);
+      sign(trx, alice_private_key);
+      try
+      {
+          PUSH_TX(db, trx, ~0);
+      } catch (fc::exception& ex)
+      {
+          BOOST_FAIL(ex.to_detail_string(fc::log_level(fc::log_level::all)));
+      }
+      generate_block();
+      trx.clear();
+   }
    // verify funds return (what about fees?)
+   BOOST_TEST_CHECK( get_balance(alice_id, graphene::chain::asset_id_type()) == 100000 );
    // verify Bob cannot execute the contract after the fact
 }
 
 BOOST_AUTO_TEST_CASE( escrow_htlc_fulfilled )
 {
-   // Alice puts a contract on the blockchain
-   // verify funds on hold
-   // Bob presents the hash
-   // verify funds enter Bob's account
-   // verify Alice cannot get her money back
+	   ACTORS((alice)(bob));
+
+	   int64_t init_balance(100000);
+
+	   transfer( committee_account, alice_id, graphene::chain::asset(init_balance) );
+
+	   uint16_t key_size = 256;
+	   std::vector<unsigned char> pre_image(256);
+	   generate_random_preimage(key_size, pre_image);
+	   std::vector<unsigned char> key_hash = hash_it(pre_image);
+
+	   graphene::chain::escrow_id_type alice_escrow_id;
+	   // cler everything out
+	   generate_block();
+	   trx.clear();
+	   // Alice puts a contract on the blockchain
+	   {
+	      graphene::chain::escrow_htlc_create_operation create_operation;
+
+	      create_operation.amount = graphene::chain::asset( 10000 );
+	      create_operation.destination = bob_id;
+	      create_operation.epoch = fc::time_point::now() + fc::seconds(3);
+	      create_operation.key_hash = key_hash;
+	      create_operation.key_size = key_size;
+	      create_operation.source = alice_id;
+	      trx.operations.push_back(create_operation);
+	      sign(trx, alice_private_key);
+	      try
+	      {
+	    	  PUSH_TX(db, trx, ~0);
+	      } catch (fc::exception& ex)
+	      {
+	    	  BOOST_FAIL( ex.to_detail_string(fc::log_level(fc::log_level::all)) );
+	      }
+	      trx.clear();
+	      graphene::chain::signed_block blk = generate_block();
+	      // can we assume that alice's transaction will be the only one in this block?
+	      processed_transaction alice_trx = blk.transactions[0];
+	      alice_escrow_id = alice_trx.operation_results[0].get<object_id_type>();
+	   }
+
+	   // verify funds on hold (make sure this can cover fees)
+	   BOOST_TEST_CHECK( get_balance(alice_id, graphene::chain::asset_id_type()) == 90000 );
+
+	   // make sure Alice can't get it back before the timeout
+	   {
+	      graphene::chain::escrow_htlc_update_operation update_operation;
+	      update_operation.update_issuer = alice_id;
+	      update_operation.escrow_id = alice_escrow_id;
+	      trx.operations.push_back(update_operation);
+	      sign(trx, alice_private_key);
+	      try
+	      {
+	          PUSH_TX(db, trx, ~0);
+	          BOOST_FAIL("Should not allow Alice to reclaim funds before timeout");
+	      } catch (fc::exception& ex)
+	      {
+	    	  // this should happen
+	      }
+	      generate_block();
+	      trx.clear();
+	   }
+
+	   // balance should not have changed
+	   BOOST_TEST_CHECK( get_balance(alice_id, graphene::chain::asset_id_type()) == 90000 );
+	   // make sure Bob (or anyone) can see the details of the transaction
+	   // send an update operation to claim the funds
+	   {
+	      graphene::chain::escrow_htlc_update_operation update_operation;
+	      update_operation.update_issuer = bob_id;
+	      update_operation.escrow_id = alice_escrow_id;
+	      update_operation.preimage = pre_image;
+	      trx.operations.push_back(update_operation);
+	      sign(trx, bob_private_key);
+	      try
+	      {
+	          PUSH_TX(db, trx, ~0);
+	      } catch (fc::exception& ex)
+	      {
+	          BOOST_FAIL(ex.to_detail_string(fc::log_level(fc::log_level::all)));
+	      }
+	      generate_block();
+	      trx.clear();
+	   }
+	   // verify Alice cannot execute the contract after the fact
+	   {
+	      graphene::chain::escrow_htlc_update_operation update_operation;
+	      update_operation.update_issuer = alice_id;
+	      update_operation.escrow_id = alice_escrow_id;
+	      trx.operations.push_back(update_operation);
+	      sign(trx, alice_private_key);
+	      try
+	      {
+	          PUSH_TX(db, trx, ~0);
+	          BOOST_FAIL("Should not allow Alice to reclaim funds after Bob already claimed them.");
+	      } catch (fc::exception& ex)
+	      {
+	    	  // this should happen
+	      }
+	      generate_block();
+	      trx.clear();
+	   }
+	   // verify funds end up in Bob's account
+	   BOOST_TEST_CHECK( get_balance(bob_id,   graphene::chain::asset_id_type()) == 10000 );
+	   BOOST_TEST_CHECK( get_balance(alice_id, graphene::chain::asset_id_type()) == 90000 );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
