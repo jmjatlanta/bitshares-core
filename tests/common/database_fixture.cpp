@@ -231,8 +231,12 @@ void database_fixture::verify_asset_supplies( const database& db )
    const auto& escrow_idx = db.get_index_type< escrow_index >().indices().get< by_id >();
    for( auto itr = escrow_idx.begin(); itr != escrow_idx.end(); ++itr )
    {
-      total_balances[itr->amount.asset_id] += itr->amount.amount;
-      total_balances[itr->pending_fee.asset_id] += itr->pending_fee.amount;
+	  // do not add in htlc escrow objects that are completed
+	  if (itr->preimage.size() == 0)
+	  {
+		  total_balances[itr->amount.asset_id] += itr->amount.amount;
+		  total_balances[itr->pending_fee.asset_id] += itr->pending_fee.amount;
+	  }
    }
 
 
