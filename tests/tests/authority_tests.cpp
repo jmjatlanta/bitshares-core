@@ -1485,4 +1485,100 @@ BOOST_AUTO_TEST_CASE( issue_214 )
    BOOST_CHECK_EQUAL( top.amount.amount.value, get_balance( bob_id, top.amount.asset_id ) );
 } FC_LOG_AND_RETHROW() }
 
+
+BOOST_AUTO_TEST_CASE ( nested_proposals )
+{ try {
+   ACTORS( (alice)(bob) );
+   fund( alice, asset(100000) );
+
+   BOOST_TEST_MESSAGE("Advancing past hardfork 214");
+   generate_blocks( HARDFORK_CORE_214_TIME + fc::hours(1) );
+   set_expiration( db, trx );
+
+   BOOST_TEST_MESSAGE( "Building first proposal" );
+   // create an outrageous transfer operation
+   transfer_operation transfer_op;
+   transfer_op.from = alice_id;
+   transfer_op.to = bob_id;
+   transfer_op.amount = asset( 10000000 );
+   // create a proposal that contains that transfer operation
+   proposal_create_operation proposal_create_op;
+   proposal_create_op.expiration_time = db.head_block_time() + fc::days(15);
+   proposal_create_op.proposed_ops.emplace_back( transfer_op );
+   proposal_create_op.fee_paying_account = alice_id;
+   proposal_create_op.review_period_seconds = 1209600;
+   trx.operations.push_back( proposal_create_op );
+   sign( trx, alice_private_key );
+   const proposal_id_type pid1 = PUSH_TX( db, trx ).operation_results[0].get<object_id_type>();
+   trx.clear();
+   proposal_create_op.proposed_ops.clear();
+
+   BOOST_TEST_MESSAGE( "Building second proposal that proposes to approve the first" );
+   // update the newly created proposal, add the approval of alice
+   proposal_update_operation prop_update_op;
+   prop_update_op.proposal = pid1;
+   prop_update_op.active_approvals_to_add.insert( alice_id );
+   // add the update operation above to be part of a new proposal
+   proposal_create_op.proposed_ops.emplace_back( prop_update_op );
+   proposal_create_op.review_period_seconds = 1209600;
+   // add another update operation that removes alice as an approver
+   prop_update_op.active_approvals_to_add.clear();
+   prop_update_op.active_approvals_to_remove.insert( alice_id );
+   // we will now have a proposal 2 that contains 2 operations...
+   // one that adds Alice to a proposal 1, one that removes her.
+   proposal_create_op.proposed_ops.emplace_back( prop_update_op );
+   // create yet another update proposal that adds alice as a signer to proposal 1 once more
+   prop_update_op.active_approvals_to_add.insert( alice_id );
+   prop_update_op.active_approvals_to_remove.clear();
+   proposal_create_op.proposed_ops.emplace_back( prop_update_op );
+   // we will now have a proposal that contains 3 "update proposal" operations...
+   // add alice, remove alice, add alice to the previously created proposal 1.
+   // Now add a 4th operation that does a transfer
+   proposal_create_op.proposed_ops.emplace_back( transfer_op );
+   trx.operations.push_back( proposal_create_op );
+   sign( trx, alice_private_key );
+   const proposal_id_type pid2 = PUSH_TX( db, trx ).operation_results[0].get<object_id_type>();
+   trx.clear();
+   proposal_create_op.proposed_ops.clear();
+
+   BOOST_TEST_MESSAGE( "Building third proposal" );
+   // grab the second (just created above) proposal
+   prop_update_op.proposal = pid2;
+   // Add alice as an approver to the second proposal
+   proposal_create_op.proposed_ops.emplace_back( prop_update_op );
+   proposal_create_op.review_period_seconds = 1209600;
+   // Remove alice as an approver to the second proposal
+   prop_update_op.active_approvals_to_add.clear();
+   prop_update_op.active_approvals_to_remove.insert( alice_id );
+   proposal_create_op.proposed_ops.emplace_back( prop_update_op );
+   // add alice as an approver to the second proposal
+   prop_update_op.active_approvals_to_add.insert( alice_id );
+   prop_update_op.active_approvals_to_remove.clear();
+   proposal_create_op.proposed_ops.emplace_back( prop_update_op );
+   // We now have prepared a 3rd proposal that manipulates
+   // the second proposal. Add a transfer operation to this proposal.
+   proposal_create_op.proposed_ops.emplace_back( transfer_op );
+   trx.operations.push_back( proposal_create_op );
+   sign( trx, alice_private_key );
+   const proposal_id_type pid3 = PUSH_TX( db, trx ).operation_results[0].get<object_id_type>();
+   trx.clear();
+   proposal_create_op.proposed_ops.clear();
+
+   BOOST_TEST_MESSAGE( "Sign the 3rd proposal" );
+   // grab the 3rd proposal
+   prop_update_op.proposal = pid3;
+   prop_update_op.fee_paying_account = alice_id;
+   // create an update operation on the 3rd proposal that contains the approval
+   // of alice, thereby kicking off a long chain of sequential events.
+   prop_update_op.active_approvals_to_add.insert( alice_id );
+   trx.operations.push_back( prop_update_op );
+   sign( trx, alice_private_key );
+   // NOTE: This is a proposal update. This is not a proposal of a proposal update.
+   // therefore, this will attempt to evaluate the nested proposals
+   PUSH_TX( db, trx );
+   trx.clear();
+
+} FC_LOG_AND_RETHROW() }
+
+
 BOOST_AUTO_TEST_SUITE_END()
