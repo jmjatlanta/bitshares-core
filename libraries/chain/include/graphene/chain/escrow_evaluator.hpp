@@ -78,6 +78,6 @@ namespace graphene { namespace chain {
 
     	  void_result do_evaluate( const escrow_htlc_update_operation& o);
     	  void_result do_apply( const escrow_htlc_update_operation& o);
-    	  const escrow_object* escrow_obj = nullptr;
+    	  const htlc_object* htlc_obj = nullptr;
       };
 } } // graphene::chain

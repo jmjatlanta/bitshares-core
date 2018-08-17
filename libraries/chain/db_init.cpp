@@ -47,6 +47,7 @@
 #include <graphene/chain/witness_schedule_object.hpp>
 #include <graphene/chain/worker_object.hpp>
 #include <graphene/chain/escrow_object.hpp>
+#include <graphene/chain/htlc_object.hpp>
 
 #include <graphene/chain/account_evaluator.hpp>
 #include <graphene/chain/asset_evaluator.hpp>
@@ -231,6 +232,7 @@ void database::initialize_indexes()
    add_index< primary_index<collateral_bid_index                          > >();
    add_index< primary_index< simple_index< fba_accumulator_object       > > >();
    add_index< primary_index< escrow_index                                 > >();
+   add_index< primary_index< htlc_index                                   > >();
 }
 
 void database::init_genesis(const genesis_state_type& genesis_state)

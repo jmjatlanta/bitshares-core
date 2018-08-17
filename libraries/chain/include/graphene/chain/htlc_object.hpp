@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 oxarbitrage and contributors.
+ * Copyright (c) 2018 jmjatlanta and contributors.
  *
  * The MIT License
  *
@@ -35,58 +35,43 @@ namespace graphene { namespace chain {
       /**
        * Temporally save escrow transactions until funds are released or operation expired.
        */
-      class escrow_object : public graphene::db::abstract_object<escrow_object> {
+      class htlc_object : public graphene::db::abstract_object<htlc_object> {
          public:
             static const uint8_t space_id = implementation_ids;
-            static const uint8_t type_id  = impl_escrow_object_type;
+            static const uint8_t type_id  = impl_htlc_object_type;
 
-            uint32_t                escrow_id=10;
             account_id_type         from;
             account_id_type         to;
-            account_id_type         agent;
             asset                   amount;
-            fc::time_point_sec          ratification_deadline;
-            fc::time_point_sec          escrow_expiration;
+            fc::time_point_sec      expiration;
             asset                   pending_fee;
-            bool                    to_approved = false;
-            bool                    agent_approved = false;
-            bool                    disputed = false;
-
-            bool is_approved()const { return to_approved && agent_approved; }
+            vector<unsigned char>	preimage_hash;
+            uint16_t				      preimage_size;
+            vector<unsigned char>	preimage;
       };
 
       struct by_from_id;
-      struct by_ratification_deadline;
       struct by_expiration;
       typedef multi_index_container<
-         escrow_object,
+         htlc_object,
          indexed_by<
             ordered_unique< tag< by_id >, member< object, object_id_type, &object::id > >,
 
-            ordered_non_unique< tag< by_expiration >, member< escrow_object, fc::time_point_sec, &escrow_object::escrow_expiration > >,
+            ordered_non_unique< tag< by_expiration >, member< htlc_object, fc::time_point_sec, &htlc_object::expiration > >,
 
-            ordered_unique< tag< by_from_id >,
-               composite_key< escrow_object,
-                  member< escrow_object, account_id_type,  &escrow_object::from >,
-                  member< escrow_object, uint32_t, &escrow_object::escrow_id >
+            ordered_non_unique< tag< by_from_id >,
+               composite_key< htlc_object,
+                  member< htlc_object, account_id_type,  &htlc_object::from >
                >
-            >,
-            ordered_unique< tag< by_ratification_deadline >,
-               composite_key< escrow_object,
-                  const_mem_fun< escrow_object, bool, &escrow_object::is_approved >,
-                  member< escrow_object, fc::time_point_sec, &escrow_object::ratification_deadline >,
-                  member< escrow_object, uint32_t, &escrow_object::escrow_id >
-               >,
-               composite_key_compare< std::less< bool >, std::less< fc::time_point_sec >, std::less< uint32_t > >
             >
          >
 
-      > escrow_object_index_type;
+      > htlc_object_index_type;
 
-      typedef generic_index< escrow_object, escrow_object_index_type > escrow_index;
+      typedef generic_index< htlc_object, htlc_object_index_type > htlc_index;
 
    } }
 
-FC_REFLECT_DERIVED( graphene::chain::escrow_object, (graphene::db::object),
-                    (escrow_id)(from)(to)(agent)(amount)(ratification_deadline)(escrow_expiration)(pending_fee)
-					(to_approved)(agent_approved)(disputed) );
+FC_REFLECT_DERIVED( graphene::chain::htlc_object, (graphene::db::object),
+                    (from)(to)(amount)(expiration)(pending_fee)
+					(preimage_hash)(preimage_size)(preimage) );

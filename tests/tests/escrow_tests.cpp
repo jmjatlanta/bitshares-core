@@ -1443,7 +1443,7 @@ BOOST_AUTO_TEST_CASE( escrow_htlc_expires )
    generate_random_preimage(key_size, pre_image);
    std::vector<unsigned char> key_hash = hash_it(pre_image);
 
-   graphene::chain::escrow_id_type alice_escrow_id;
+   graphene::chain::htlc_id_type alice_htlc_id;
    // cler everything out
    generate_block();
    trx.clear();
@@ -1470,7 +1470,7 @@ BOOST_AUTO_TEST_CASE( escrow_htlc_expires )
       graphene::chain::signed_block blk = generate_block();
       // can we assume that alice's transaction will be the only one in this block?
       processed_transaction alice_trx = blk.transactions[0];
-      alice_escrow_id = alice_trx.operation_results[0].get<object_id_type>();
+      alice_htlc_id = alice_trx.operation_results[0].get<object_id_type>();
    }
 
    // verify funds on hold (make sure this can cover fees)
@@ -1481,7 +1481,7 @@ BOOST_AUTO_TEST_CASE( escrow_htlc_expires )
    {
       graphene::chain::escrow_htlc_update_operation update_operation;
       update_operation.update_issuer = alice_id;
-      update_operation.escrow_id = alice_escrow_id;
+      update_operation.htlc_id = alice_htlc_id;
       trx.operations.push_back(update_operation);
       sign(trx, alice_private_key);
       try
@@ -1504,7 +1504,7 @@ BOOST_AUTO_TEST_CASE( escrow_htlc_expires )
    {
       graphene::chain::escrow_htlc_update_operation update_operation;
       update_operation.update_issuer = alice_id;
-      update_operation.escrow_id = alice_escrow_id;
+      update_operation.htlc_id = alice_htlc_id;
       trx.operations.push_back(update_operation);
       sign(trx, alice_private_key);
       try
@@ -1535,7 +1535,7 @@ BOOST_AUTO_TEST_CASE( escrow_htlc_fulfilled )
 	   generate_random_preimage(key_size, pre_image);
 	   std::vector<unsigned char> key_hash = hash_it(pre_image);
 
-	   graphene::chain::escrow_id_type alice_escrow_id;
+	   graphene::chain::htlc_id_type alice_htlc_id;
 	   // cler everything out
 	   generate_block();
 	   trx.clear();
@@ -1562,7 +1562,7 @@ BOOST_AUTO_TEST_CASE( escrow_htlc_fulfilled )
 	      graphene::chain::signed_block blk = generate_block();
 	      // can we assume that alice's transaction will be the only one in this block?
 	      processed_transaction alice_trx = blk.transactions[0];
-	      alice_escrow_id = alice_trx.operation_results[0].get<object_id_type>();
+	      alice_htlc_id = alice_trx.operation_results[0].get<object_id_type>();
 	   }
 
 	   // verify funds on hold (make sure this can cover fees)
@@ -1572,7 +1572,7 @@ BOOST_AUTO_TEST_CASE( escrow_htlc_fulfilled )
 	   {
 	      graphene::chain::escrow_htlc_update_operation update_operation;
 	      update_operation.update_issuer = alice_id;
-	      update_operation.escrow_id = alice_escrow_id;
+	      update_operation.htlc_id = alice_htlc_id;
 	      trx.operations.push_back(update_operation);
 	      sign(trx, alice_private_key);
 	      try
@@ -1594,7 +1594,7 @@ BOOST_AUTO_TEST_CASE( escrow_htlc_fulfilled )
 	   {
 	      graphene::chain::escrow_htlc_update_operation update_operation;
 	      update_operation.update_issuer = bob_id;
-	      update_operation.escrow_id = alice_escrow_id;
+	      update_operation.htlc_id = alice_htlc_id;
 	      update_operation.preimage = pre_image;
 	      trx.operations.push_back(update_operation);
 	      sign(trx, bob_private_key);
@@ -1612,7 +1612,7 @@ BOOST_AUTO_TEST_CASE( escrow_htlc_fulfilled )
 	   {
 	      graphene::chain::escrow_htlc_update_operation update_operation;
 	      update_operation.update_issuer = alice_id;
-	      update_operation.escrow_id = alice_escrow_id;
+	      update_operation.htlc_id = alice_htlc_id;
 	      trx.operations.push_back(update_operation);
 	      sign(trx, alice_private_key);
 	      try

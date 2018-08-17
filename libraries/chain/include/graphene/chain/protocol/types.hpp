@@ -164,7 +164,8 @@ namespace graphene { namespace chain {
       impl_buyback_object_type,
       impl_fba_accumulator_object_type,
       impl_collateral_bid_object_type,
-      impl_escrow_object_type
+      impl_escrow_object_type,
+      impl_htlc_object_type
    };
 
    //typedef fc::unsigned_int            object_id_type;
@@ -218,6 +219,7 @@ namespace graphene { namespace chain {
    class fba_accumulator_object;
    class collateral_bid_object;
    class escrow_object;
+   class htlc_object;
 
    typedef object_id< implementation_ids, impl_global_property_object_type,  global_property_object>                    global_property_id_type;
    typedef object_id< implementation_ids, impl_dynamic_global_property_object_type,  dynamic_global_property_object>    dynamic_global_property_id_type;
@@ -240,6 +242,7 @@ namespace graphene { namespace chain {
    typedef object_id< implementation_ids, impl_fba_accumulator_object_type, fba_accumulator_object >                    fba_accumulator_id_type;
    typedef object_id< implementation_ids, impl_collateral_bid_object_type, collateral_bid_object >                      collateral_bid_id_type;
    typedef object_id< implementation_ids, impl_escrow_object_type, escrow_object >                                      escrow_id_type;
+   typedef object_id< implementation_ids, impl_htlc_object_type, htlc_object >                                          htlc_id_type;
 
 
    typedef fc::array<char, GRAPHENE_MAX_ASSET_SYMBOL_LENGTH>    symbol_type;
@@ -373,6 +376,7 @@ FC_REFLECT_ENUM( graphene::chain::impl_object_type,
                  (impl_fba_accumulator_object_type)
                  (impl_collateral_bid_object_type)
                  (impl_escrow_object_type)
+                 (impl_htlc_object_type)
                )
 
 FC_REFLECT_TYPENAME( graphene::chain::share_type )
@@ -406,6 +410,7 @@ FC_REFLECT_TYPENAME( graphene::chain::buyback_id_type )
 FC_REFLECT_TYPENAME( graphene::chain::fba_accumulator_id_type )
 FC_REFLECT_TYPENAME( graphene::chain::collateral_bid_id_type )
 FC_REFLECT_TYPENAME( graphene::chain::escrow_id_type )
+FC_REFLECT_TYPENAME( graphene::chain::htlc_id_type )
 
 
 FC_REFLECT( graphene::chain::void_t, )

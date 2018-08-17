@@ -27,6 +27,7 @@
 #include <graphene/chain/database.hpp>
 #include <graphene/chain/escrow_evaluator.hpp>
 #include <graphene/chain/escrow_object.hpp>
+#include <graphene/chain/htlc_object.hpp>
 #include <graphene/chain/hardfork.hpp>
 
 namespace graphene { namespace chain {
@@ -260,13 +261,13 @@ namespace graphene { namespace chain {
 
              db().adjust_balance( o.source, -o.amount );
 
-             const escrow_object& esc = db().create<escrow_object>([&]( escrow_object& esc ) {
-                esc.from                   = o.source;
-                esc.to                     = o.destination;
-                esc.amount                 = o.amount;
+             const htlc_object& esc = db().create<htlc_object>([&]( htlc_object& esc ) {
+                esc.from                  = o.source;
+                esc.to                    = o.destination;
+                esc.amount                = o.amount;
                 esc.preimage_hash		   = o.key_hash;
                 esc.preimage_size		   = o.key_size;
-                esc.escrow_expiration		= o.epoch;
+                esc.expiration		      = o.epoch;
              });
              return  esc.id;
 
@@ -275,13 +276,13 @@ namespace graphene { namespace chain {
 
       void_result escrow_htlc_update_evaluator::do_evaluate(const escrow_htlc_update_operation& o)
       {
-    	  escrow_obj = &db().get<escrow_object>(o.escrow_id);
+    	  htlc_obj = &db().get<htlc_object>(o.htlc_id);
 
     	  // TODO: Use signatures to determine what to do, not whether preimage was provided
     	  if (o.preimage.size() > 0)
     	  {
-    		  FC_ASSERT(o.preimage.size() == escrow_obj->preimage_size, "Preimage size mismatch.");
-    		  FC_ASSERT(fc::time_point::now().sec_since_epoch() < escrow_obj->escrow_expiration.sec_since_epoch(), "Preimage provided after escrow expiration.");
+    		  FC_ASSERT(o.preimage.size() == htlc_obj->preimage_size, "Preimage size mismatch.");
+    		  FC_ASSERT(fc::time_point::now().sec_since_epoch() < htlc_obj->expiration.sec_since_epoch(), "Preimage provided after escrow expiration.");
 
     		  // hash the preimage given by the user
     		  fc::sha256 attempted_hash = fc::sha256::hash(o.preimage);
@@ -293,12 +294,12 @@ namespace graphene { namespace chain {
     			  passed_hash[i] = data[i];
     		  }
 
-    		  FC_ASSERT(passed_hash == escrow_obj->preimage_hash, "Provided preimage does not generate correct hash.");
+    		  FC_ASSERT(passed_hash == htlc_obj->preimage_hash, "Provided preimage does not generate correct hash.");
     	  }
     	  else
     	  {
-    		  FC_ASSERT(fc::time_point::now().sec_since_epoch() > escrow_obj->escrow_expiration.sec_since_epoch(), "Unable to reclaim until escrow expiration.");
-    		  FC_ASSERT(escrow_obj->preimage.size() == 0, "Preimage already provided.");
+    		  FC_ASSERT(fc::time_point::now().sec_since_epoch() > htlc_obj->expiration.sec_since_epoch(), "Unable to reclaim until escrow expiration.");
+    		  FC_ASSERT(htlc_obj->preimage.size() == 0, "Preimage already provided.");
     	  }
     	  return void_result();
       }
@@ -307,15 +308,15 @@ namespace graphene { namespace chain {
       {
     	  if (o.preimage.size() > 0)
     	  {
-    		  db().adjust_balance(escrow_obj->to, escrow_obj->amount);
-    		  db().modify(*escrow_obj, [&o](escrow_object& obj){
+    		  db().adjust_balance(htlc_obj->to, htlc_obj->amount);
+    		  db().modify(*htlc_obj, [&o](htlc_object& obj){
     			  obj.preimage = o.preimage;
     		  });
     	  }
     	  else
     	  {
-    		  db().adjust_balance(escrow_obj->from, escrow_obj->amount);
-    		  db().remove(*escrow_obj);
+    		  db().adjust_balance(htlc_obj->from, htlc_obj->amount);
+    		  db().remove(*htlc_obj);
     	  }
     	  return void_result();
       }

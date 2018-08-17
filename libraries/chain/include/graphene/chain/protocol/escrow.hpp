@@ -98,11 +98,11 @@ namespace graphene { namespace chain {
           struct fee_parameters_type {
              uint64_t fee            = 1 * GRAPHENE_BLOCKCHAIN_PRECISION;
           };
-    	  asset fee; // paid to network
-    	  escrow_id_type escrow_id; // the object we are attempting to update
-    	  account_id_type update_issuer; // who is attempting to update the transaction
-    	  std::vector<unsigned char> preimage; // the preimage (not used if after epoch timeout)
-    	  extensions_type extensions; // for future expansion
+    	  asset                       fee; // paid to network
+    	  htlc_id_type                htlc_id; // the object we are attempting to update
+    	  account_id_type             update_issuer; // who is attempting to update the transaction
+    	  std::vector<unsigned char>  preimage; // the preimage (not used if after epoch timeout)
+    	  extensions_type             extensions; // for future expansion
 
     	  void validate()const;
           void get_required_active_authorities( boost::container::flat_set<account_id_type>& a )const{ a.insert(update_issuer); }
@@ -201,4 +201,4 @@ FC_REFLECT( graphene::chain::escrow_approve_operation, (fee)(from)(to)(agent)(wh
 FC_REFLECT( graphene::chain::escrow_dispute_operation, (fee)(from)(to)(agent)(who)(escrow_id) )
 FC_REFLECT( graphene::chain::escrow_release_operation, (fee)(from)(to)(agent)(who)(receiver)(escrow_id)(amount) )
 FC_REFLECT( graphene::chain::escrow_htlc_create_operation, (fee)(source)(destination)(amount)(key_hash)(key_size)(epoch)(extensions))
-FC_REFLECT( graphene::chain::escrow_htlc_update_operation, (fee)(escrow_id)(update_issuer)(preimage)(extensions))
+FC_REFLECT( graphene::chain::escrow_htlc_update_operation, (fee)(update_issuer)(preimage)(extensions))
