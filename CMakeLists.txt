@@ -34,6 +34,18 @@ endif(USE_PCH)
 
 option(USE_PROFILER "Build with GPROF support(Linux)." OFF)
 
+# Intel TBB library
+set( TBB_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libraries/tbb )
+set( TBB_BUILD_DIR "tbb_build_dir=${CMAKE_CURRENT_SOURCE_DIR}/CMakeFiles" )
+set( TBB_BUILD_PREFIX "tbb_build_prefix=tbb" )
+include(${CMAKE_CURRENT_SOURCE_DIR}/libraries/tbb/cmake/TBBBuild.cmake)
+tbb_build(TBB_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/libraries/tbb 
+   MAKE_ARGS
+      ${TBB_BUILD_DIR}
+      ${TBB_BUILD_PREFIX}
+   CONFIG_DIR TBB_DIR)
+find_package( TBB REQUIRED )
+
 IF( NOT WIN32 )
   list( APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libraries/fc/CMakeModules" )
 ENDIF( NOT WIN32 )
@@ -211,4 +223,5 @@ endif(ENABLE_INSTALLER)
 
 MESSAGE( STATUS "" )
 MESSAGE( STATUS "PROFILER: ${USE_PROFILER}" )
+MESSAGE( STATUS "TBB_INCLUDE_DIRS: ${TBB_INCLUDE_DIRS}" )
 MESSAGE( STATUS "" )

@@ -982,11 +982,11 @@ namespace graphene { namespace net { namespace detail {
       // disconnect reason, so it may yield)
       for( const peer_connection_ptr& peer : peers_to_disconnect_gently )
       {
-        fc::exception detailed_error( FC_LOG_MESSAGE(warn, "Disconnecting due to inactivity",
+         fc::exception detailed_error( FC_LOG_MESSAGE(warn, "Disconnecting due to inactivity",
                                                       ( "last_message_received_seconds_ago", (peer->get_last_message_received_time() - fc::time_point::now() ).count() / fc::seconds(1 ).count() )
                                                       ( "last_message_sent_seconds_ago", (peer->get_last_message_sent_time() - fc::time_point::now() ).count() / fc::seconds(1 ).count() )
-                                                      ( "inactivity_timeout", _active_connections.find(peer ) != _active_connections.end() ? _peer_inactivity_timeout * 10 : _peer_inactivity_timeout ) ) );
-        disconnect_from_peer( peer.get(), "Disconnecting due to inactivity", false, detailed_error );
+                                                      ( "inactivity_timeout", _active_connections.find(peer) != _active_connections.end() ? _peer_inactivity_timeout * 10 : _peer_inactivity_timeout ) ) );
+         disconnect_from_peer( peer.get(), "Disconnecting due to inactivity", false, detailed_error );
       }
       peers_to_disconnect_gently.clear();
 
@@ -2469,7 +2469,7 @@ namespace graphene { namespace net { namespace detail {
       _terminating_connections.erase(originating_peer_ptr);
       if (_active_connections.find(originating_peer_ptr) != _active_connections.end())
       {
-        _active_connections.erase(originating_peer_ptr);
+        _active_connections.unsafe_erase(originating_peer_ptr);
 
         if (inbound_endpoint && originating_peer_ptr->get_remote_endpoint())
         {
@@ -3896,7 +3896,7 @@ namespace graphene { namespace net { namespace detail {
         _handshaking_connections.erase(new_peer);
         _terminating_connections.erase(new_peer);
         assert(_active_connections.find(new_peer) == _active_connections.end());
-        _active_connections.erase(new_peer);
+        _active_connections.unsafe_erase(new_peer);
         assert(_closing_connections.find(new_peer) == _closing_connections.end());
         _closing_connections.erase(new_peer);
 
@@ -4212,7 +4212,7 @@ namespace graphene { namespace net { namespace detail {
     void node_impl::move_peer_to_closing_list(const peer_connection_ptr& peer)
     {
       VERIFY_CORRECT_THREAD();
-      _active_connections.erase(peer);
+      _active_connections.unsafe_erase(peer);
       _handshaking_connections.erase(peer);
       _closing_connections.insert(peer);
       _terminating_connections.erase(peer);
@@ -4221,7 +4221,7 @@ namespace graphene { namespace net { namespace detail {
     void node_impl::move_peer_to_terminating_list(const peer_connection_ptr& peer)
     {
       VERIFY_CORRECT_THREAD();
-      _active_connections.erase(peer);
+      _active_connections.unsafe_erase(peer);
       _handshaking_connections.erase(peer);
       _closing_connections.erase(peer);
       _terminating_connections.insert(peer);
