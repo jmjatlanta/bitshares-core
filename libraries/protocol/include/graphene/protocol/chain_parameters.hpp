@@ -71,6 +71,11 @@ namespace graphene { namespace protocol {
       uint8_t                 account_fee_scale_bitshifts         = GRAPHENE_DEFAULT_ACCOUNT_FEE_SCALE_BITSHIFTS; ///< number of times to left bitshift account registration fee at each scaling
       uint8_t                 max_authority_depth                 = GRAPHENE_MAX_SIG_CHECK_DEPTH;
 
+      unsigned_int            min_mccr                            = GRAPHENE_DEFAULT_MIN_MCCR;
+      unsigned_int            min_mcr                             = GRAPHENE_DEFAULT_MIN_MCR;
+      unsigned_int            max_interest_rate                   = GRAPHENE_DEFAULT_MAX_INTEREST_RATE;
+      unsigned_int            max_call_duration                   = GRAPHENE_DEFAULT_MAX_CALL_DURATION;
+
       struct ext
       {
          optional< htlc_options > updatable_htlc_options;
@@ -131,6 +136,10 @@ FC_REFLECT( graphene::protocol::chain_parameters,
             (accounts_per_fee_scale)
             (account_fee_scale_bitshifts)
             (max_authority_depth)
+            (min_mccr)
+            (min_mcr)
+            (max_interest_rate)
+            (max_call_duration)
             (extensions)
           )
 

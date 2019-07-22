@@ -138,3 +138,15 @@
 ///@}
 
 #define GRAPHENE_FBA_STEALTH_DESIGNATED_ASSET (asset_id_type(743))
+
+/**
+ *  Lending for margin trading default values
+ */
+// MCR and MCCR are expressed in the same way as in the existing price feed logic
+// i. e. only the part above 100%, and as a scaled percentage value. E. g. a value of `4200` would mean `142%`.
+#define GRAPHENE_DEFAULT_MIN_MCCR                             25 * GRAPHENE_1_PERCENT;
+#define GRAPHENE_DEFAULT_MIN_MCR                              100 * GRAPHENE_1_PERCENT;
+#define GRAPHENE_DEFAULT_MAX_INTEREST_RATE                    999999 * GRAPHENE_1_PERCENT;
+// The maximum duration of a margin call in seconds, if one is necessary,
+// after which a portfolio confiscation will be triggered
+#define GRAPHENE_DEFAULT_MAX_CALL_DURATION                    (7 * (86400)); /* seconds */

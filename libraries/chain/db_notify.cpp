@@ -281,6 +281,10 @@ struct get_impacted_account_visitor
    { 
       _impacted.insert( op.fee_payer() );
    }
+   void operator()( const loan_offer_create_operation& op )
+   {
+      _impacted.insert( op.fee_payer() );
+   }
 };
 
 void graphene::chain::operation_get_impacted_accounts( const operation& op, flat_set<account_id_type>& result )
