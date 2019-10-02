@@ -214,7 +214,7 @@ void database::initialize_indexes()
    add_index< primary_index<balance_index> >();
    add_index< primary_index<blinded_balance_index> >();
    add_index< primary_index< htlc_index> >();
-   // Commenting this in causes linking error add_index< primary_index< lending_offer_index> >();
+   add_index< primary_index< lending_offer_index> >();
 
    //Implementation object indexes
    add_index< primary_index<transaction_index                             > >();

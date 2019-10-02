@@ -79,7 +79,7 @@ namespace graphene {
       >
       loan_offer_multi_index_type;
 
-      typedef generic_index <loan_offer_object, loan_offer_multi_index_type> loan_offer_index;
+      typedef generic_index <loan_offer_object, loan_offer_multi_index_type> lending_offer_index;
 
    }
 } // graphene::chain

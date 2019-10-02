@@ -34,6 +34,7 @@
 #include <graphene/chain/fba_object.hpp>
 #include <graphene/chain/global_property_object.hpp>
 #include <graphene/chain/htlc_object.hpp>
+#include <graphene/chain/loan_offer_object.hpp>
 #include <graphene/chain/operation_history_object.hpp>
 #include <graphene/chain/special_authority_object.hpp>
 #include <graphene/chain/transaction_history_object.hpp>
@@ -129,6 +130,10 @@ FC_REFLECT_DERIVED_NO_TYPENAME( graphene::chain::htlc_object::condition_info, BO
 FC_REFLECT_DERIVED_NO_TYPENAME( graphene::chain::htlc_object, (graphene::db::object),
                (transfer) (conditions) )
 
+FC_REFLECT_DERIVED_NO_TYPENAME( graphene::chain::loan_offer_object, (graphene::db::object),
+      (owner) (loan_asset) (min_amount) (max_amount) (mcr) (mccr) (max_call_duration)
+      (tradable_asset) (min_duration) (max_duration) (min_interest_rate) (expiration) )
+
 FC_REFLECT_DERIVED_NO_TYPENAME( graphene::chain::operation_history_object, (graphene::chain::object),
                     (op)(result)(block_num)(trx_in_block)(op_in_trx)(virtual_op) )
 
@@ -202,6 +207,7 @@ GRAPHENE_IMPLEMENT_EXTERNAL_SERIALIZATION( graphene::chain::fba_accumulator_obje
 GRAPHENE_IMPLEMENT_EXTERNAL_SERIALIZATION( graphene::chain::dynamic_global_property_object )
 GRAPHENE_IMPLEMENT_EXTERNAL_SERIALIZATION( graphene::chain::global_property_object )
 GRAPHENE_IMPLEMENT_EXTERNAL_SERIALIZATION( graphene::chain::htlc_object )
+GRAPHENE_IMPLEMENT_EXTERNAL_SERIALIZATION( graphene::chain::loan_offer_object )
 GRAPHENE_IMPLEMENT_EXTERNAL_SERIALIZATION( graphene::chain::operation_history_object )
 GRAPHENE_IMPLEMENT_EXTERNAL_SERIALIZATION( graphene::chain::account_transaction_history_object )
 GRAPHENE_IMPLEMENT_EXTERNAL_SERIALIZATION( graphene::chain::special_authority_object )
